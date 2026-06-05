@@ -207,17 +207,11 @@ if __name__ == "__main__":
     def free_port(start=8050):
         for p in range(start, start+20):
             with socket.socket() as s:
-                if s.connect_ex(("127.0.0.1",p)) != 0: return p
+                if s.connect_ex(("127.0.0.1", p)) != 0: return p
         return start
 
-    port = free_port()
-    threading.Thread(
-        target=lambda: (__import__("time").sleep(1.2),
-                        __import__("webbrowser").open(f"http://127.0.0.1:{port}")),
-        daemon=True).start()
-
-    print(f"\n  🎗  BrCapp → http://127.0.0.1:{port}")
-    print(f"  Staff:    admin/admin123  ·  dott_rossi/clinico123  ·  viewer/viewer123")
-    print(f"  Paziente: /patient/login\n")
-    host = os.environ.get("HOST", "127.0.0.1")
-    app.run(debug=False, host=host, port=port)
+    port = int(os.environ.get("PORT", free_port()))
+    
+    # Render e altri server richiedono 0.0.0.0
+    # In locale funziona ugualmente
+    app.run(debug=False, host="0.0.0.0", port=port)
