@@ -1,0 +1,271 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+* { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+
+body { background-color: #F4F6F9; margin: 0; }
+
+/* ── Sidebar ─────────────────────────────────────────────────── */
+#sidebar {
+    background: #ffffff;
+    border-right: 1px solid #E5E7EB;
+    min-height: 100vh;
+    position: fixed;
+    top: 0; left: 0;
+    width: 240px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+#main-content {
+    margin-left: 240px;
+    min-height: 100vh;
+}
+
+/* ── Nav items ───────────────────────────────────────────────── */
+.nav-item-link {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; border-radius: 10px;
+    font-size: 14px; font-weight: 500;
+    color: #374151 !important;
+    text-decoration: none !important;
+    margin: 2px 8px; transition: all .15s;
+}
+.nav-item-link:hover { background: #F8D7E8; color: #D63384 !important; }
+.nav-item-link.active { background: #F8D7E8; color: #D63384 !important; font-weight: 700; }
+
+/* ── Topbar ──────────────────────────────────────────────────── */
+.page-topbar {
+    background: #ffffff;
+    border-bottom: 1px solid #E5E7EB;
+    padding: 18px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 50;
+}
+.page-title   { font-size: 22px; font-weight: 700; color: #1A1A2E; margin: 0; }
+.page-subtitle{ font-size: 13px; color: #6B7280; margin: 0; }
+
+/* ── KPI Card ────────────────────────────────────────────────── */
+.kpi-card {
+    background: #ffffff;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    overflow: hidden;
+}
+.kpi-stripe { height: 5px; }
+.kpi-body   { padding: 16px 18px; }
+.kpi-label  { font-size: 12px; color: #6B7280; font-weight: 500; margin-bottom: 4px; }
+.kpi-value  { font-size: 32px; font-weight: 700; line-height: 1.1; }
+
+/* ── Generic Card ────────────────────────────────────────────── */
+.card-box {
+    background: #ffffff;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 20px;
+}
+.card-title { font-size: 14px; font-weight: 700; color: #1A1A2E; margin-bottom: 12px; }
+
+/* ── Table ───────────────────────────────────────────────────── */
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner td,
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    font-family: 'Inter', Arial, sans-serif !important;
+    font-size: 13px !important;
+    padding: 11px 14px !important;
+    border-bottom: 1px solid #F3F4F6 !important;
+    border-right: none !important;
+}
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner th {
+    background-color: #EDE7F6 !important;
+    color: #4A235A !important;
+    font-weight: 700 !important;
+    font-size: 11px !important;
+    text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1px solid #E5E7EB !important;
+}
+.dash-table-container .dash-spreadsheet-container .dash-spreadsheet-inner tr:hover td {
+    background: #FDF2F8 !important;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn-pink {
+    background-color: #D63384 !important; border-color: #D63384 !important;
+    font-weight: 600 !important; font-size: 13px !important;
+    padding: 9px 20px !important; border-radius: 8px !important;
+    transition: background .15s !important;
+}
+.btn-pink:hover { background-color: #4A235A !important; border-color: #4A235A !important; }
+
+.btn-outline-purple {
+    border: 1.5px solid #4A235A !important; color: #4A235A !important;
+    background: transparent !important; font-weight: 600 !important;
+    font-size: 13px !important; padding: 8px 18px !important; border-radius: 8px !important;
+}
+.btn-outline-purple:hover { background: #EDE7F6 !important; }
+
+/* ── Form controls ───────────────────────────────────────────── */
+.form-control, .form-select {
+    border: 1px solid #D1D5DB !important;
+    border-radius: 7px !important;
+    font-size: 13px !important;
+    padding: 9px 13px !important;
+    transition: border .15s !important;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #D63384 !important;
+    box-shadow: 0 0 0 3px rgba(214,51,132,.1) !important;
+}
+.form-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 4px; }
+
+/* ── Section header in form ──────────────────────────────────── */
+.form-section {
+    background: #F8D7E8; color: #D63384; font-weight: 700;
+    font-size: 12px; padding: 7px 14px; border-radius: 7px;
+    margin: 16px 0 8px 0;
+}
+
+/* ── Result card ─────────────────────────────────────────────── */
+.result-card {
+    border: 2px solid #E5E7EB; border-radius: 14px;
+    background: #fff; padding: 24px; text-align: center;
+}
+.result-big { font-size: 40px; font-weight: 800; margin: 8px 0; }
+.result-sub { font-size: 13px; color: #6B7280; }
+
+/* ── History row ─────────────────────────────────────────────── */
+.hist-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; background: #fff;
+    border: 1px solid #E5E7EB; border-radius: 8px;
+    margin-bottom: 6px; font-size: 13px;
+}
+.badge-bcs  { background:#D1FAE5; color:#059669; padding:3px 10px; border-radius:20px; font-weight:700; font-size:12px; }
+.badge-mast { background:#FEE2E2; color:#DC2626; padding:3px 10px; border-radius:20px; font-weight:700; font-size:12px; }
+
+/* ── Avg stat ────────────────────────────────────────────────── */
+.avg-card { background:#fff; border:1px solid #E5E7EB; border-radius:12px; padding:16px; text-align:center; }
+.avg-val  { font-size:26px; font-weight:700; }
+.avg-lbl  { font-size:12px; color:#6B7280; margin-top:4px; }
+
+/* ── Sidebar footer ──────────────────────────────────────────── */
+.sidebar-footer {
+    background:#EDE7F6; border-radius:10px; margin:12px;
+    padding:10px 14px; text-align:center;
+}
+.sidebar-footer-name { font-size:13px; font-weight:700; color:#4A235A; }
+.sidebar-footer-sub  { font-size:11px; color:#6B7280; margin-top:2px; }
+
+/* ── Login page ──────────────────────────────────────────────── */
+.login-wrapper {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #F8D7E8 0%, #EDE7F6 50%, #F4F6F9 100%);
+}
+.login-card {
+    background: white;
+    border-radius: 18px;
+    box-shadow: 0 20px 60px rgba(74,35,90,.12);
+    padding: 44px 44px 36px;
+    width: 100%; max-width: 420px;
+}
+.login-logo { text-align: center; margin-bottom: 28px; }
+.login-logo img { width: 160px; }
+.login-title {
+    font-size: 22px; font-weight: 700; color: #1A1A2E;
+    text-align: center; margin-bottom: 6px;
+}
+.login-sub {
+    font-size: 13px; color: #6B7280;
+    text-align: center; margin-bottom: 28px;
+}
+.login-error {
+    background: #FEE2E2; color: #DC2626;
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 13px; margin-bottom: 14px;
+}
+
+/* ── User badge in topbar ────────────────────────────────────── */
+.user-badge {
+    display: flex; align-items: center; gap: 10px;
+    background: #F4F6F9; border-radius: 30px;
+    padding: 6px 16px 6px 10px; cursor: pointer;
+}
+.user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700; color: white;
+}
+.user-name  { font-size: 13px; font-weight: 600; color: #1A1A2E; }
+.user-role  { font-size: 11px; color: #6B7280; }
+.role-badge {
+    display: inline-block; padding: 2px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 700;
+}
+
+/* ── Admin page ──────────────────────────────────────────────── */
+.perm-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: #F4F6F9; border-radius: 20px;
+    padding: 4px 12px; font-size: 12px; margin: 2px;
+}
+.perm-yes { color: #059669; }
+.perm-no  { color: #DC2626; }
+
+/* ── Access denied ───────────────────────────────────────────── */
+.access-denied {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 60vh; text-align: center;
+}
+.access-denied h2 { font-size: 28px; color: #DC2626; margin-bottom: 10px; }
+.access-denied p  { font-size: 15px; color: #6B7280; }
+
+/* ── Patient report ──────────────────────────────────────────── */
+.patient-hero {
+    background: linear-gradient(135deg,#D63384,#4A235A);
+    border-radius: 14px; padding: 28px 32px;
+    color: white; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 24px;
+}
+.patient-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(255,255,255,.25);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 800; flex-shrink: 0;
+}
+.patient-hero-name  { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+.patient-hero-sub   { font-size: 13px; opacity: .8; }
+
+.report-section-title {
+    font-size: 15px; font-weight: 700; color: #1A1A2E;
+    border-left: 4px solid #D63384;
+    padding-left: 12px; margin: 24px 0 12px;
+}
+
+.clinical-grid {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+    margin-bottom: 8px;
+}
+.clinical-item {
+    background:#F4F6F9; border-radius:10px;
+    padding: 12px 16px;
+}
+.clinical-item-label { font-size:11px; color:#6B7280; font-weight:600; margin-bottom:3px; }
+.clinical-item-value { font-size:18px; font-weight:700; color:#1A1A2E; }
+
+.prediction-hero {
+    border-radius: 14px; padding: 24px;
+    text-align: center; border: 2px solid;
+}
+.prediction-hero-icon  { font-size: 48px; }
+.prediction-hero-label { font-size: 26px; font-weight: 800; margin: 6px 0; }
+.prediction-hero-date  { font-size: 12px; color: #6B7280; }
+
+.lifestyle-bar-label { font-size:12px; color:#374151; font-weight:600; margin-bottom:4px; }
+.lifestyle-bar-wrap  { background:#F0F0F0; border-radius:20px; height:10px; overflow:hidden; }
+.lifestyle-bar-fill  { height:100%; border-radius:20px; }
+
+.login-toggle {
+    text-align:center; margin-top:16px; font-size:13px; color:#6B7280;
+}
+.login-toggle a { color:#D63384; font-weight:600; text-decoration:none; }
