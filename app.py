@@ -144,4 +144,5 @@ if __name__ == "__main__":
     print(f"\n  🎗  BrCapp → http://127.0.0.1:{port}")
     print(f"  Staff:    admin/admin123  ·  dott_rossi/clinico123  ·  viewer/viewer123")
     print(f"  Paziente: /patient/login\n")
-    app.run(debug=False, port=port)
+    host = os.environ.get("HOST", "127.0.0.1")
+    app.run(debug=False, host=host, port=port)
