@@ -184,6 +184,8 @@ layout = html.Div([
 
     dcc.Store(id="patients-store"),
     html.Div(id="patients-dummy"),
+    # Forza caricamento tabella all'avvio
+    dcc.Interval(id="patients-init", interval=500, n_intervals=0, max_intervals=1),
 ])
 
 
@@ -192,8 +194,9 @@ layout = html.Div([
     Output("patients-table","data"),
     Input("pt-search","value"),
     Input("patients-store","data"),
+    Input("patients-init","n_intervals"),
 )
-def load_table(search, _store):
+def load_table(search, _store, _init):
     rows = PatientRepository.get_all(search=search or "")
     for r in rows:
         r["er_display"]   = "＋" if r.get("er_status")   else "－"

@@ -81,6 +81,10 @@ def seed_demo_data():
                 ))
 
     print("  ✓  80 pazienti demo inseriti con classificazioni storiche")
+    # Verifica
+    from database.db import StatisticsRepository
+    s = StatisticsRepository.get_summary()
+    print(f"  📊  Verifica DB: {s['total_patients']} pazienti · {s['total_classifications']} classificazioni")
 
 
 def auto_import_csv():
