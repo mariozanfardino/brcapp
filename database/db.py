@@ -127,23 +127,30 @@ class StatisticsRepository:
     @staticmethod
     def get_summary() -> Dict[str, Any]:
         with read_scope() as db:
+            total_p = db.query(func.count(Patient.id)).scalar() or 0
+            total_c = db.query(func.count(ClassificationResult.id)).scalar() or 0
+            bcs     = db.query(func.count(ClassificationResult.id))                        .filter(ClassificationResult.predicted_class=="BCS").scalar() or 0
+            mast    = db.query(func.count(ClassificationResult.id))                        .filter(ClassificationResult.predicted_class=="Mastectomy").scalar() or 0
+
+            # BMI calcolato in Python (SQLite non ha POW standard)
+            rows = db.query(ClinicalRecord.peso, ClinicalRecord.altezza)                     .filter(ClinicalRecord.peso != None,
+                             ClinicalRecord.altezza != None,
+                             ClinicalRecord.altezza > 0).limit(500).all()
+            bmis = [p/((h/100)**2) for p,h in rows if h > 0]
+            avg_bmi = round(sum(bmis)/len(bmis), 1) if bmis else 0
+
+            # DISEASE dal campo clinico (chirurgia effettiva)
+            bcs_real  = db.query(func.count(ClinicalRecord.id))                          .filter(ClinicalRecord.DISEASE == "BCS").scalar() or 0
+            mast_real = db.query(func.count(ClinicalRecord.id))                          .filter(ClinicalRecord.DISEASE == "Mastectomy").scalar() or 0
+
             return {
-                "total_patients":
-                    db.query(func.count(Patient.id)).scalar() or 0,
-                "total_classifications":
-                    db.query(func.count(ClassificationResult.id)).scalar() or 0,
-                "bcs_count":
-                    db.query(func.count(ClassificationResult.id))
-                      .filter(ClassificationResult.predicted_class == "BCS").scalar() or 0,
-                "mastectomy_count":
-                    db.query(func.count(ClassificationResult.id))
-                      .filter(ClassificationResult.predicted_class == "Mastectomy").scalar() or 0,
-                "avg_age":   0,   # non più presente come campo diretto
-                "avg_bmi":
-                    round(db.query(func.avg(
-                        (ClinicalRecord.peso / func.pow(ClinicalRecord.altezza/100, 2))
-                    )).scalar() or 0, 1),
-                "avg_tumor_size": 0,
+                "total_patients":        total_p,
+                "total_classifications": total_c,
+                "bcs_count":             bcs or bcs_real,
+                "mastectomy_count":      mast or mast_real,
+                "avg_age":               0,
+                "avg_bmi":               avg_bmi,
+                "avg_tumor_size":        0,
             }
 
     @staticmethod

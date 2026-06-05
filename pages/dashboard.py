@@ -99,10 +99,14 @@ layout = html.Div([
     Input("dash-refresh","n_clicks"),
 )
 def update_dashboard(_i, _c):
-    s     = StatisticsRepository.get_summary()
-    grade = StatisticsRepository.get_grade_distribution()
-    bmis  = StatisticsRepository.get_bmi_distribution()
-    preds = StatisticsRepository.get_eating_vs_prediction()  # riuso per BCS/mast
+    try:
+        s     = StatisticsRepository.get_summary()
+        grade = StatisticsRepository.get_grade_distribution()
+    except Exception:
+        s     = {"total_patients":0,"total_classifications":0,
+                 "bcs_count":0,"mastectomy_count":0,
+                 "avg_age":0,"avg_bmi":0,"avg_tumor_size":0}
+        grade = {}
 
     # ── Pie predizioni ─────────────────────────────────────────────────────
     bcs  = s.get("bcs_count",0)
