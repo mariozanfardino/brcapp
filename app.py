@@ -136,15 +136,7 @@ if __name__ == "__main__":
         return start
 
     port = int(os.environ.get("PORT", free_port()))
-    host = os.environ.get("HOST", "127.0.0.1")
-
-    if host != "127.0.0.1":  # su server non aprire browser
-        print(f"\n  🎗  BrCapp → http://{host}:{port}\n")
-        app.run(debug=False, host=host, port=port)
-    else:
-        threading.Thread(
-            target=lambda: (__import__("time").sleep(1.2),
-                            __import__("webbrowser").open(f"http://127.0.0.1:{port}")),
-            daemon=True).start()
-        print(f"\n  🎗  BrCapp → http://127.0.0.1:{port}\n")
-        app.run(debug=False, host="127.0.0.1", port=port)
+    
+    # Render e altri server richiedono 0.0.0.0
+    # In locale funziona ugualmente
+    app.run(debug=False, host="0.0.0.0", port=port)
