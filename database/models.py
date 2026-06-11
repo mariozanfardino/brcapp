@@ -1,99 +1,89 @@
-# database/models.py
-from sqlalchemy import (Column, Integer, Float, String, Boolean,
-                        DateTime, Text, ForeignKey)
+# database/models.py — Schema esatto da global_new.csv
+from sqlalchemy import Column, Integer, Float, String, Boolean, DateTime, Text, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
 from datetime import datetime
-import enum
 
 Base = declarative_base()
 
-# ── Paziente ──────────────────────────────────────────────────────────────────
+
 class Patient(Base):
     __tablename__ = "patients"
-    id           = Column(Integer, primary_key=True, autoincrement=True)
-    code         = Column(String(20), unique=True, nullable=False)
-    initials     = Column(String(20), nullable=True)   # opzionale
-    age          = Column(Integer,    nullable=True)   # opzionale (non nel CSV)
-    bmi          = Column(Float,      nullable=True)   # opzionale
-    created_at   = Column(DateTime, default=datetime.utcnow)
-    updated_at   = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    notes        = Column(Text, nullable=True)
-    patient_pin  = Column(String(256), nullable=True)
-    patient_email= Column(String(120), nullable=True)
+    id            = Column(Integer, primary_key=True, autoincrement=True)
+    code          = Column(String(20), unique=True, nullable=False)
+    initials      = Column(String(20), nullable=True)
+    created_at    = Column(DateTime, default=datetime.utcnow)
+    updated_at    = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    notes         = Column(Text, nullable=True)
+    patient_pin   = Column(String(256), nullable=True)
+    patient_email = Column(String(120), nullable=True)
 
-    clinical     = relationship("ClinicalRecord", back_populates="patient",
-                                uselist=False, cascade="all, delete")
+    clinical        = relationship("ClinicalRecord", back_populates="patient",
+                                   uselist=False, cascade="all, delete")
     classifications = relationship("ClassificationResult", back_populates="patient",
                                    cascade="all, delete")
 
     def to_dict(self):
-        d = {
-            "id":       self.id,
-            "code":     self.code,
-            "initials": self.initials or "",
-            "age":      self.age,
-            "bmi":      self.bmi,
-            "created_at": self.created_at.strftime("%Y-%m-%d") if self.created_at else "",
-        }
+        d = {"id": self.id, "code": self.code, "initials": self.initials or "",
+             "created_at": self.created_at.strftime("%Y-%m-%d") if self.created_at else ""}
         if self.clinical:
             d.update(self.clinical.to_dict())
+        if self.classifications:
+            last = max(self.classifications, key=lambda x: x.run_at)
+            d["last_prediction"]      = last.predicted_class
+            d["last_confidence_bcs"]  = last.confidence_bcs
+            d["last_confidence_mast"] = last.confidence_mast
+        else:
+            d["last_prediction"] = None
         return d
 
 
-# ── Dati clinici reali (colonne CSV global_new.csv) ───────────────────────────
 class ClinicalRecord(Base):
+    """Colonne esatte del file global_new.csv (22 feature + DISEASE target)."""
     __tablename__ = "clinical_records"
     id         = Column(Integer, primary_key=True, autoincrement=True)
     patient_id = Column(Integer, ForeignKey("patients.id"), nullable=False)
 
-    # Antropometrici
-    peso    = Column(Float, nullable=True)      # kg
-    altezza = Column(Float, nullable=True)      # cm
-    # BMI calcolato
-    @property
-    def bmi(self):
-        if self.peso and self.altezza and self.altezza > 0:
-            return round(self.peso / ((self.altezza/100)**2), 1)
-        return None
+    # ── Antropometrici ────────────────────────────────────────────────────────
+    peso    = Column(Float, nullable=True)
+    altezza = Column(Float, nullable=True)
 
-    # Anamnesi
-    fumo                       = Column(Integer, nullable=True)  # 0/1
-    gravidanza                 = Column(Integer, nullable=True)
-    allattamento               = Column(Integer, nullable=True)
-    menopausa                  = Column(Integer, nullable=True)
-    casi_vero_famiglia         = Column(Integer, nullable=True)
-    familiarita_carcinoma_ovario = Column(Integer, nullable=True)
+    # ── Anamnesi ──────────────────────────────────────────────────────────────
+    fumo                          = Column(Float, nullable=True)
+    gravidanza                    = Column(Float, nullable=True)
+    allattamento                  = Column(Float, nullable=True)
+    menopausa                     = Column(Float, nullable=True)
+    casi_vero_famiglia            = Column(Float, nullable=True)
+    familiarita_carcinoma_ovario  = Column(Float, nullable=True)
 
-    # Imaging / clinica
-    struttura_ghiandolare       = Column(Float, nullable=True)
-    rapporto_cuteDX             = Column(Float, nullable=True)
-    rapporto_cuteSX             = Column(Float, nullable=True)
-    rapporto_areola_capezzolooDX= Column(Float, nullable=True)
-    rapporto_areola_capezzoloSX = Column(Float, nullable=True)
-    stato_linfonodaleXX         = Column(Float, nullable=True)   # DX
-    stato_linfondaleXX          = Column(Float, nullable=True)   # SX
-    biRadioClinico              = Column(Float, nullable=True)   # BI-RADS
-    citologia                   = Column(Float, nullable=True)
-    citologia_codifica          = Column(Float, nullable=True)
+    # ── Imaging & Clinica ─────────────────────────────────────────────────────
+    struttura_ghiandolare         = Column(Float, nullable=True)
+    rapporto_cuteDX               = Column(Float, nullable=True)
+    rapporto_cuteSX               = Column(Float, nullable=True)
+    rapporto_areola_capezzolooDX  = Column(Float, nullable=True)
+    rapporto_areola_capezzoloSX   = Column(Float, nullable=True)
+    stato_linfonodaleXX           = Column(Float, nullable=True)
+    stato_linfondaleXX            = Column(Float, nullable=True)
+    biRadioClinico                = Column(Float, nullable=True)
+    citologia                     = Column(Float, nullable=True)
+    citologia_codifica            = Column(Float, nullable=True)
 
-    # Chirurgia
-    focalita                        = Column(Float, nullable=True)
-    lato_intervento                 = Column(Float, nullable=True)
-    intervento_chirurgico_bilaterale= Column(Float, nullable=True)
-    ricostruzione                   = Column(Float, nullable=True)
+    # ── Chirurgia ─────────────────────────────────────────────────────────────
+    focalita                          = Column(Float, nullable=True)
+    lato_intervento                   = Column(Float, nullable=True)
+    intervento_chirurgico_bilaterale  = Column(Float, nullable=True)
+    ricostruzione                     = Column(Float, nullable=True)
 
-    # Target
-    DISEASE = Column(String(20), nullable=True)  # BCS / Mastectomy / altro
+    # ── Target ────────────────────────────────────────────────────────────────
+    DISEASE = Column(String(20), nullable=True)
 
     patient = relationship("Patient", back_populates="clinical")
 
     def to_dict(self):
         return {c.key: getattr(self, c.key)
                 for c in self.__table__.columns
-                if c.key not in ("id","patient_id")}
+                if c.key not in ("id", "patient_id")}
 
 
-# ── Risultato classificazione ─────────────────────────────────────────────────
 class ClassificationResult(Base):
     __tablename__ = "classification_results"
     id              = Column(Integer, primary_key=True, autoincrement=True)
@@ -110,17 +100,16 @@ class ClassificationResult(Base):
 
     def to_dict(self):
         return {
-            "id": self.id,
-            "patient_code": self.patient.code if self.patient else "",
-            "run_at": self.run_at.strftime("%Y-%m-%d %H:%M") if self.run_at else "",
-            "predicted_class": self.predicted_class,
-            "confidence_bcs":  round(self.confidence_bcs*100,1) if self.confidence_bcs else None,
-            "confidence_mast": round(self.confidence_mast*100,1) if self.confidence_mast else None,
-            "model_version":   self.model_version or "N/A",
+            "id":             self.id,
+            "patient_code":   self.patient.code if self.patient else "",
+            "run_at":         self.run_at.strftime("%Y-%m-%d %H:%M") if self.run_at else "",
+            "predicted_class":self.predicted_class,
+            "confidence_bcs": round(self.confidence_bcs*100,1) if self.confidence_bcs else None,
+            "confidence_mast":round(self.confidence_mast*100,1) if self.confidence_mast else None,
+            "model_version":  self.model_version or "N/A",
         }
 
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
 class UserGroup(Base):
     __tablename__ = "user_groups"
     id          = Column(Integer, primary_key=True, autoincrement=True)
@@ -132,6 +121,7 @@ class UserGroup(Base):
     def to_dict(self):
         return {"id":self.id,"name":self.name,"role":self.role,
                 "description":self.description or "","user_count":len(self.users)}
+
 
 class User(Base):
     __tablename__ = "users"

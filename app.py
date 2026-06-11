@@ -14,78 +14,51 @@ db_module.setup(DB_PATH)
 CSV_PATH = "/home/zanfardino/mnt/dev/BOSP/original_data/patients_attributes_list/global_new.csv"
 
 def seed_demo_data():
-    """Inserisce pazienti fittizi realistici se il DB è vuoto."""
+    """Inserisce 80 pazienti demo con le 22 feature esatte del CSV global_new.csv."""
     from database.db import StatisticsRepository, session_scope
     from database.models import Patient, ClinicalRecord, ClassificationResult
+    from ml.weka_bridge import _generate_synthetic, FEATURE_NAMES
     import random, string
     from datetime import datetime, timedelta
+    import numpy as np
 
     if StatisticsRepository.get_summary()["total_patients"] > 0:
         return
 
-    print("  🌱  Inserimento dati demo…")
-    random.seed(42)
-
-    diseases = ["BCS", "BCS", "BCS", "Mastectomy", "BCS", "Mastectomy"]
+    print("  🌱  Seed demo pazienti…")
+    np.random.seed(42)
+    rng = np.random.default_rng(42)
+    N   = 80
+    X, y = _generate_synthetic(N)
 
     with session_scope() as db:
-        for i in range(80):
-            code = "PT-" + "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
-            created = datetime.utcnow() - timedelta(days=random.randint(0, 365))
+        for i in range(N):
+            code = "PT-" + "".join(random.choices(string.ascii_uppercase+string.digits, k=5))
+            created = datetime.utcnow() - timedelta(days=rng.integers(0,365))
             p = Patient(code=code, created_at=created)
             db.add(p); db.flush()
 
-            disease = diseases[i % len(diseases)]
+            row   = X[i]
+            disease = "BCS" if y[i] == 0 else "Mastectomy"
+            feats = {FEATURE_NAMES[j]: round(float(row[j]),3) for j in range(len(FEATURE_NAMES))}
 
-            cr = ClinicalRecord(
-                patient_id           = p.id,
-                peso                 = round(random.gauss(68, 13), 1),
-                altezza              = round(random.gauss(163, 7), 1),
-                fumo                 = random.choice([0, 0, 0, 1]),
-                gravidanza           = random.choice([0, 1, 1, 1]),
-                allattamento         = random.choice([0, 1, 1]),
-                menopausa            = random.choice([0, 0, 1, 1]),
-                casi_vero_famiglia   = random.choice([0, 0, 0, 1]),
-                familiarita_carcinoma_ovario = random.choice([0, 0, 0, 0, 1]),
-                struttura_ghiandolare        = round(random.uniform(1, 4), 2),
-                rapporto_cuteDX              = round(random.uniform(0.1, 0.9), 3),
-                rapporto_cuteSX              = round(random.uniform(0.1, 0.9), 3),
-                rapporto_areola_capezzolooDX = round(random.uniform(0.1, 0.8), 3),
-                rapporto_areola_capezzoloSX  = round(random.uniform(0.1, 0.8), 3),
-                stato_linfonodaleXX          = random.choice([0, 0, 0, 1, 2]) if disease=="Mastectomy" else random.choice([0, 0, 1]),
-                stato_linfondaleXX           = random.choice([0, 0, 0, 1, 2]) if disease=="Mastectomy" else random.choice([0, 0, 1]),
-                biRadioClinico               = random.choice([3, 3, 4, 4, 5]) if disease=="Mastectomy" else random.choice([3, 3, 4]),
-                citologia                    = random.choice([3, 4, 5]) if disease=="Mastectomy" else random.choice([2, 3, 3]),
-                citologia_codifica           = random.choice([1, 2]),
-                focalita                     = 2 if disease=="Mastectomy" and random.random()>0.5 else 1,
-                lato_intervento              = random.choice([0, 1]),
-                intervento_chirurgico_bilaterale = 1 if disease=="Mastectomy" and random.random()>0.7 else 0,
-                ricostruzione                = random.choice([0, 0, 1]),
-                DISEASE                      = disease,
-            )
+            cr = ClinicalRecord(patient_id=p.id, DISEASE=disease, **feats)
             db.add(cr)
 
-            # Aggiungi alcune classificazioni AI storiche
-            n_clf = random.randint(1, 3)
-            for j in range(n_clf):
-                conf_bcs  = round(random.uniform(0.6, 0.95), 3) if disease=="BCS" else round(random.uniform(0.1, 0.4), 3)
-                conf_mast = round(1 - conf_bcs, 3)
-                clf_date  = created + timedelta(days=random.randint(1, 30)*(j+1))
+            # 1-3 classificazioni AI storiche
+            for j in range(rng.integers(1,4)):
+                c_bcs  = round(float(rng.uniform(0.6,0.95)) if y[i]==0 else rng.uniform(0.05,0.4), 3)
+                c_mast = round(1-c_bcs, 3)
                 db.add(ClassificationResult(
-                    patient_id      = p.id,
-                    run_at          = clf_date,
-                    model_version   = "fallback-1.0",
-                    predicted_class = disease,
-                    confidence_bcs  = conf_bcs,
-                    confidence_mast = conf_mast,
+                    patient_id=p.id,
+                    run_at=created+timedelta(days=int(rng.integers(1,60))*(j+1)),
+                    model_version="fallback-1.0",
+                    predicted_class=disease,
+                    confidence_bcs=c_bcs,
+                    confidence_mast=c_mast,
                 ))
 
-    print("  ✓  80 pazienti demo inseriti con classificazioni storiche")
-    # Verifica
-    from database.db import StatisticsRepository
-    s = StatisticsRepository.get_summary()
-    print(f"  📊  Verifica DB: {s['total_patients']} pazienti · {s['total_classifications']} classificazioni")
-
+    print("  ✓  80 pazienti demo inseriti")
 
 def auto_import_csv():
     """
@@ -207,11 +180,17 @@ if __name__ == "__main__":
     def free_port(start=8050):
         for p in range(start, start+20):
             with socket.socket() as s:
-                if s.connect_ex(("127.0.0.1", p)) != 0: return p
+                if s.connect_ex(("127.0.0.1",p)) != 0: return p
         return start
 
-    port = int(os.environ.get("PORT", free_port()))
-    
-    # Render e altri server richiedono 0.0.0.0
-    # In locale funziona ugualmente
-    app.run(debug=False, host="0.0.0.0", port=port)
+    port = free_port()
+    threading.Thread(
+        target=lambda: (__import__("time").sleep(1.2),
+                        __import__("webbrowser").open(f"http://127.0.0.1:{port}")),
+        daemon=True).start()
+
+    print(f"\n  🎗  BrCapp → http://127.0.0.1:{port}")
+    print(f"  Staff:    admin/admin123  ·  dott_rossi/clinico123  ·  viewer/viewer123")
+    print(f"  Paziente: /patient/login\n")
+    host = os.environ.get("HOST", "127.0.0.1")
+    app.run(debug=False, host=host, port=port)
