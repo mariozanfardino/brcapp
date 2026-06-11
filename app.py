@@ -34,7 +34,7 @@ def seed_demo_data():
     with session_scope() as db:
         for i in range(N):
             code = "PT-" + "".join(random.choices(string.ascii_uppercase+string.digits, k=5))
-            created = datetime.utcnow() - timedelta(days=rng.integers(0,365))
+            created = datetime.utcnow() - timedelta(days=int(rng.integers(0,365)))
             p = Patient(code=code, created_at=created)
             db.add(p); db.flush()
 
@@ -46,7 +46,7 @@ def seed_demo_data():
             db.add(cr)
 
             # 1-3 classificazioni AI storiche
-            for j in range(rng.integers(1,4)):
+            for j in range(int(rng.integers(1,4))):
                 c_bcs  = round(float(rng.uniform(0.6,0.95)) if y[i]==0 else rng.uniform(0.05,0.4), 3)
                 c_mast = round(1-c_bcs, 3)
                 db.add(ClassificationResult(
