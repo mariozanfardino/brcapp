@@ -1,38 +1,64 @@
-# database/migrations.py — colonne esatte da global_new.csv
 import logging
 from sqlalchemy import text
 log = logging.getLogger(__name__)
 
 MIGRATIONS = [
     # patients
-    ("patients","initials","TEXT"),
-    ("patients","patient_pin","TEXT"),
+    ("patients","gender","TEXT"),("patients","nazionalita","TEXT"),
+    ("patients","birth_date","TEXT"),("patients","age_range","TEXT"),
+    ("patients","blood_type","TEXT"),("patients","rh_positive","INTEGER"),
+    ("patients","initials","TEXT"),("patients","patient_pin","TEXT"),
     ("patients","patient_email","TEXT"),
     # user_groups
     ("user_groups","description","TEXT"),
-    # clinical_records — 22 feature + DISEASE
-    ("clinical_records","peso","REAL"),
-    ("clinical_records","altezza","REAL"),
-    ("clinical_records","fumo","REAL"),
-    ("clinical_records","gravidanza","REAL"),
-    ("clinical_records","allattamento","REAL"),
-    ("clinical_records","menopausa","REAL"),
-    ("clinical_records","casi_vero_famiglia","REAL"),
-    ("clinical_records","familiarita_carcinoma_ovario","REAL"),
-    ("clinical_records","struttura_ghiandolare","REAL"),
-    ("clinical_records","rapporto_cuteDX","REAL"),
-    ("clinical_records","rapporto_cuteSX","REAL"),
-    ("clinical_records","rapporto_areola_capezzolooDX","REAL"),
-    ("clinical_records","rapporto_areola_capezzoloSX","REAL"),
-    ("clinical_records","stato_linfonodaleXX","REAL"),
-    ("clinical_records","stato_linfondaleXX","REAL"),
-    ("clinical_records","biRadioClinico","REAL"),
-    ("clinical_records","citologia","REAL"),
-    ("clinical_records","citologia_codifica","REAL"),
-    ("clinical_records","focalita","REAL"),
-    ("clinical_records","lato_intervento","REAL"),
-    ("clinical_records","intervento_chirurgico_bilaterale","REAL"),
-    ("clinical_records","ricostruzione","REAL"),
+    # clinical_records — anamnesi
+    ("clinical_records","peso","REAL"),("clinical_records","altezza","REAL"),
+    ("clinical_records","bmi","REAL"),("clinical_records","waist","REAL"),
+    ("clinical_records","hips","REAL"),("clinical_records","whr","REAL"),
+    ("clinical_records","fumo","TEXT"),("clinical_records","alcohol","TEXT"),
+    ("clinical_records","gravidanza","TEXT"),
+    ("clinical_records","familiarita_carcinoma_ovarico","TEXT"),
+    ("clinical_records","previous_cancer","TEXT"),
+    ("clinical_records","previous_breast_cancer","TEXT"),
+    ("clinical_records","previous_chemotherapy","TEXT"),
+    ("clinical_records","previous_radiotherapy","TEXT"),
+    ("clinical_records","breast_surgeries","TEXT"),
+    ("clinical_records","autoimmune_diseases","TEXT"),
+    ("clinical_records","diabetes","TEXT"),("clinical_records","keloids","TEXT"),
+    ("clinical_records","familial_breast_cancer","TEXT"),
+    ("clinical_records","brca_mutation","TEXT"),
+    ("clinical_records","bra_size","TEXT"),("clinical_records","ptosis_degree","TEXT"),
+    ("clinical_records","skin_tropism","TEXT"),
+    ("clinical_records","struttura_ghiandolare","TEXT"),
+    # clinical data
+    ("clinical_records","preoperative_chemotherapy","TEXT"),
+    ("clinical_records","injury_type","TEXT"),("clinical_records","cancer_site","TEXT"),
+    ("clinical_records","tumor_size_mm","REAL"),
+    ("clinical_records","injuries_number","INTEGER"),
+    ("clinical_records","focalita","TEXT"),
+    ("clinical_records","rapporto_cuteDX","TEXT"),("clinical_records","rapporto_cuteSX","TEXT"),
+    ("clinical_records","rapporto_areola_capezzoloDX","TEXT"),
+    ("clinical_records","rapporto_areola_capezzoloSX","TEXT"),
+    ("clinical_records","event","TEXT"),("clinical_records","dubious_injuries","TEXT"),
+    ("clinical_records","main_cancer_site","TEXT"),("clinical_records","tumor_in_situ","TEXT"),
+    # breast cancer eval
+    ("clinical_records","histotype","TEXT"),("clinical_records","grading","TEXT"),
+    ("clinical_records","clinical_stage","TEXT"),("clinical_records","er_status","TEXT"),
+    ("clinical_records","pgr_status","TEXT"),("clinical_records","ki67","REAL"),
+    ("clinical_records","cerbb2","TEXT"),("clinical_records","classification_pre","TEXT"),
+    ("clinical_records","stato_linfonodaleDX","TEXT"),
+    ("clinical_records","stato_linfonodaleSX","TEXT"),
+    ("clinical_records","biRadsClinico","TEXT"),
+    ("clinical_records","citologia_codifica","TEXT"),
+    ("clinical_records","ricostruzione","TEXT"),
+    # pre/post
+    ("clinical_records","t_operation_type","TEXT"),("clinical_records","n_operation_type","TEXT"),
+    ("clinical_records","histotype_post","TEXT"),("clinical_records","grading_post","TEXT"),
+    ("clinical_records","clinical_stage_post","TEXT"),("clinical_records","er_post","TEXT"),
+    ("clinical_records","pgr_post","TEXT"),("clinical_records","ki67_post","REAL"),
+    ("clinical_records","cerbb2_post","TEXT"),("clinical_records","classification_post","TEXT"),
+    ("clinical_records","nodal_status_post","TEXT"),
+    ("clinical_records","surgical_progress","TEXT"),("clinical_records","cosmetic_result","TEXT"),
     ("clinical_records","DISEASE","TEXT"),
 ]
 
@@ -45,7 +71,6 @@ def run(engine):
                 rows = conn.execute(text(f"PRAGMA table_info({table})")).fetchall()
                 if column not in [r[1] for r in rows]:
                     conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
-                    log.info(f"Migrazione: {table}.{column}")
             except Exception as e:
                 log.debug(f"Skip {table}.{column}: {e}")
         conn.commit()
