@@ -192,5 +192,5 @@ if __name__ == "__main__":
     print(f"\n  🎗  BrCapp → http://127.0.0.1:{port}")
     print(f"  Staff:    admin/admin123  ·  dott_rossi/clinico123  ·  viewer/viewer123")
     print(f"  Paziente: /patient/login\n")
-    host = os.environ.get("HOST", "127.0.0.1")
-    app.run(debug=False, host=host, port=port)
+    # Su Render HOST non viene letto — forza sempre 0.0.0.0
+    app.run(debug=False, host="0.0.0.0", port=port)
