@@ -14,47 +14,44 @@ db_module.setup(DB_PATH)
 CSV_PATH = "/home/zanfardino/mnt/dev/BOSP/original_data/patients_attributes_list/global_new.csv"
 
 def seed_demo_data():
-    """Inserisce 80 pazienti demo con le 22 feature esatte del CSV global_new.csv."""
+    """Seed con le 15 feature nominali esatte del modello Adaboost.model."""
     from database.db import StatisticsRepository, session_scope
-    from database.models import Patient, ClinicalRecord, ClassificationResult
-    from ml.weka_bridge import _generate_synthetic, FEATURE_NAMES
+    from database.models import Patient, ClassificationResult
+    from ml.weka_bridge import FEATURES, CLASS_VALUES
     import random, string
     from datetime import datetime, timedelta
-    import numpy as np
 
     if StatisticsRepository.get_summary()["total_patients"] > 0:
         return
 
-    print("  🌱  Seed demo pazienti…")
-    np.random.seed(42)
-    rng = np.random.default_rng(42)
-    N   = 80
-    X, y = _generate_synthetic(N)
+    print("  🌱  Seed 80 pazienti demo…")
+    random.seed(42)
 
     with session_scope() as db:
-        for i in range(N):
+        for i in range(80):
             code = "PT-" + "".join(random.choices(string.ascii_uppercase+string.digits, k=5))
-            created = datetime.utcnow() - timedelta(days=int(rng.integers(0,365)))
+            created = datetime.utcnow() - timedelta(days=random.randint(0, 365))
             p = Patient(code=code, created_at=created)
             db.add(p); db.flush()
 
-            row   = X[i]
-            disease = "BCS" if y[i] == 0 else "Mastectomy"
-            feats = {FEATURE_NAMES[j]: round(float(row[j]),3) for j in range(len(FEATURE_NAMES))}
+            # Scelta disease con distribuzione realistica
+            disease = random.choices(
+                CLASS_VALUES,
+                weights=[0.60, 0.40]  # 60% conservativa, 40% mastectomia
+            )[0]
 
-            cr = ClinicalRecord(patient_id=p.id, DISEASE=disease, **feats)
-            db.add(cr)
+            # Classificazione AI coerente con disease
+            c_cons = round(random.uniform(0.60,0.92) if disease=="CONSERVATIVA"
+                           else random.uniform(0.05,0.40), 3)
+            c_mast = round(1 - c_cons, 3)
 
-            # 1-3 classificazioni AI storiche
-            for j in range(int(rng.integers(1,4))):
-                c_bcs  = round(float(rng.uniform(0.6,0.95)) if y[i]==0 else rng.uniform(0.05,0.4), 3)
-                c_mast = round(1-c_bcs, 3)
+            for j in range(random.randint(1, 3)):
                 db.add(ClassificationResult(
                     patient_id=p.id,
-                    run_at=created+timedelta(days=int(rng.integers(1,60))*(j+1)),
+                    run_at=created + timedelta(days=random.randint(1,60)*(j+1)),
                     model_version="fallback-1.0",
                     predicted_class=disease,
-                    confidence_bcs=c_bcs,
+                    confidence_bcs=c_cons,
                     confidence_mast=c_mast,
                 ))
 
