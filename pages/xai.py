@@ -82,19 +82,20 @@ def _tab_model():
                 ],style={"borderBottom":"1px solid #F3F4F6"}) for k,v in fields])],style={"width":"100%"}),
             ],className="card-box mb-3"),
             html.Div([html.Div("🔄  Come funziona AdaBoost",className="card-title"),
-                *[html.Div([html.Div([
+                html.Div([html.Div([
                     html.Div(n,style={"width":"26px","height":"26px","borderRadius":"50%","background":PINK,
                                       "color":"white","fontWeight":"700","fontSize":"12px",
                                       "display":"flex","alignItems":"center","justifyContent":"center","flexShrink":"0"}),
                     html.Div([html.Div(t,style={"fontWeight":"700","fontSize":"13px","marginBottom":"2px"}),
                               html.Div(d,style={"fontSize":"12px","color":"#6B7280","lineHeight":"1.5"})]),
-                ],style={"display":"flex","gap":"12px","alignItems":"flex-start"}),
-                ],style={"marginBottom":"12px"}) for n,t,d in [
+                ],style={"display":"flex","gap":"12px","alignItems":"flex-start","marginBottom":"12px"})
+                for n,t,d in [
                     ("1","Feature nominali","Il modello riceve 15 attributi categoriali — non numeri."),
                     ("2","Decision Stump","Ogni weak learner divide su una singola feature con la sua soglia."),
                     ("3","Ensemble ponderato","100 stumps combinati: ogni voto è pesato dalla sua accuratezza."),
                     ("4","Output probabilistico","P(CONSERVATIVA) + P(MASTECTOMIA) = 1."),
-                ]],className="card-box"),
+                ]]),
+            ],className="card-box"),
         ],md=6),
         dbc.Col([
             html.Div([html.Div("📈  Performance BrCaM",className="card-title"),
