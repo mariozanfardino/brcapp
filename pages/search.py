@@ -1,184 +1,262 @@
 import dash
-from dash import html, dcc, callback, Output, Input, State
+from dash import html, dcc, callback, Output, Input, State, dash_table
 import dash_bootstrap_components as dbc
-from dash import dash_table
 from database.db import PatientRepository
+from ml.weka_bridge import FEATURES, FEATURE_LABELS
 from config import PINK, PURPLE
 
 dash.register_page(__name__, path="/search", name="Ricerca Avanzata")
 
-FILTER_FIELDS = [
-    ("Codice paziente",     "code",            "text"),
-    ("Età minima",          "age_min",         "number"),
-    ("Età massima",         "age_max",         "number"),
-    ("BMI minimo",          "bmi_min",         "number"),
-    ("BMI massimo",         "bmi_max",         "number"),
-    ("Tumore min (mm)",     "tumor_min",       "number"),
-    ("Tumore max (mm)",     "tumor_max",       "number"),
-    ("Grado",               "grade",           "select", ["","1","2","3"]),
-    ("ER",                  "er_status",       "select", ["","Positivo","Negativo"]),
-    ("PR",                  "pr_status",       "select", ["","Positivo","Negativo"]),
-    ("HER2",                "her2_status",     "select", ["","Positivo","Negativo"]),
-    ("Multifocalità",       "multifocality",   "select", ["","Sì","No"]),
-    ("Linfonodi pos.",      "lymph_node",      "select", ["","Sì","No"]),
-    ("Predizione AI",       "prediction",      "select", ["","BCS","Mastectomy"]),
-    ("Chirurgia effettiva", "actual_surgery",  "select", ["","BCS","Mastectomy","Non eseguita"]),
-    ("Ki67 max (%)",        "ki67_max",        "number"),
-    ("Score alim. min",     "eating_min",      "number"),
+# ── Filtri per sezione ────────────────────────────────────────────────────────
+VITAL_FILTERS = [
+    ("Fascia età",    "age_range",   "multi",  None, list(FEATURES["età"])),
+    ("Sesso",         "gender",      "select", None, ["F","M"]),
+    ("Nazionalità",   "nazionalita", "text",   None, None),
+    ("Gruppo sang.",  "blood_type",  "multi",  None, ["A","B","AB","0"]),
 ]
 
-def _input(label, key, typ, opts=None):
-    lbl = dbc.Label(label, className="form-label")
-    if typ == "select":
-        w = dbc.Select(id=f"sf-{key}",
-                       options=[{"label":o,"value":o} for o in opts],
-                       value="")
+CLINICAL_FILTERS = [
+    ("Fumo",           "fumo",          "select", None, ["si","no"]),
+    ("Gravidanza",     "gravidanza",    "select", None, ["si","no"]),
+    ("Alcool",         "alcohol",       "select", None, ["si","no"]),
+    ("Mutazione BRCA", "brca_mutation", "select", None, ["si","no"]),
+    ("Familiarità K.ovaio","familiarita_carcinoma_ovarico","select",None,["si","no"]),
+    ("Diabete",        "diabetes",      "select", None, ["si","no"]),
+    ("K. mammella prec.","previous_breast_cancer","select",None,["si","no"]),
+    ("Dimensione tumore (mm)","tumor_size_mm","range",None,None),
+    ("Ki-67 (%)","ki67","range",None,None),
+]
+
+MODEL_FILTERS = [
+    ("Struttura ghiandolare","struttura_ghiandolare","multi",None,FEATURES["struttura_ghiandolare"]),
+    ("Cute DX",              "rapporto_cuteDX",      "multi",None,FEATURES["rapporto_cuteDX"]),
+    ("Cute SX",              "rapporto_cuteSX",      "multi",None,FEATURES["rapporto_cuteSX"]),
+    ("Areola-capezzolo DX",  "rapporto_areola_capezzoloDX","multi",None,FEATURES["rapporto_areola_capezzoloDX"]),
+    ("Areola-capezzolo SX",  "rapporto_areola_capezzoloSX","multi",None,FEATURES["rapporto_areola_capezzoloSX"]),
+    ("Stato linfonodale DX", "stato_linfonodaleDX",  "multi",None,FEATURES["stato_linfonodaleDX"]),
+    ("Stato linfonodale SX", "stato_linfonodaleSX",  "multi",None,FEATURES["stato_linfonodaleSX"]),
+    ("BI-RADS clinico",      "biRadsClinico",        "multi",None,FEATURES["biRadsClinico"]),
+    ("Citologia",            "citologia_codifica",   "select",None,["si","no"]),
+    ("Focalità",             "focalita",             "select",None,["si","no"]),
+    ("Ricostruzione",        "ricostruzione",        "select",None,["si","no"]),
+]
+
+OUTCOME_FILTERS = [
+    ("Classificazione AI","last_prediction","select",None,["CONSERVATIVA","MASTECTOMIA"]),
+    ("DISEASE (effettivo)","DISEASE","select",None,["CONSERVATIVA","MASTECTOMIA"]),
+    ("Grading","grading","multi",None,["G1","G2","G3"]),
+    ("Stadio clinico","clinical_stage","multi",None,["I","IIA","IIB","IIIA","IIIB","IIIC"]),
+    ("ER","er_status","select",None,["Positivo","Negativo","Borderline"]),
+    ("PgR","pgr_status","select",None,["Positivo","Negativo","Borderline"]),
+    ("CerbB2","cerbb2","select",None,["Positivo","Negativo","Equivoco"]),
+]
+
+ALL_SECTIONS = [
+    ("📊  Vital Statistics",        VITAL_FILTERS),
+    ("📋  Clinical History",        CLINICAL_FILTERS),
+    ("🔬  Feature Modello",         MODEL_FILTERS),
+    ("🎗  Outcome & Staging",       OUTCOME_FILTERS),
+]
+
+def _filter_widget(label, key, ftype, _, opts):
+    fid = f"sf-{key}"
+    lbl = dbc.Label(label, className="form-label", style={"fontSize":"12px"})
+    if ftype == "multi":
+        w = dcc.Dropdown(id=fid, options=[{"label":o,"value":o} for o in (opts or [])],
+                         multi=True, placeholder=f"Tutti", style={"fontSize":"12px"})
+    elif ftype == "select":
+        w = dbc.Select(id=fid, options=[{"label":"Tutti","value":""}]
+                       +[{"label":o,"value":o} for o in (opts or [])], value="",
+                       style={"fontSize":"12px","height":"36px"})
+    elif ftype == "range":
+        w = html.Div([
+            dcc.RangeSlider(id=fid, min=0, max=200 if "tumore" in label else 100,
+                            step=1, value=[0, 200 if "tumore" in label else 100],
+                            marks=None,
+                            tooltip={"placement":"bottom","always_visible":True}),
+        ], style={"padding":"4px 0"})
     else:
-        w = dbc.Input(id=f"sf-{key}", type=typ, placeholder="—")
-    return dbc.Col([lbl, w], md=3, style={"marginBottom":"12px"})
+        w = dbc.Input(id=fid, type="text", placeholder="—",
+                      style={"height":"36px","fontSize":"12px"})
+    return dbc.Col([lbl, w], md=4, style={"marginBottom":"14px"})
+
 
 layout = html.Div([
     html.Div([
-        html.Div([
-            html.H1("Ricerca Avanzata", className="page-title"),
-            html.P("Filtra pazienti su tutti i campi clinici simultaneamente",
-                   className="page-subtitle"),
-        ]),
+        html.Div([html.H1("Ricerca Avanzata",className="page-title"),
+                  html.P("Filtra su tutti i campi clinici e del modello",className="page-subtitle")]),
         html.Div(id="search-count",
                  style={"fontWeight":"700","fontSize":"14px","color":PINK}),
     ], className="page-topbar"),
 
     html.Div([
-        # Pannello filtri
+        # Logica AND/OR
         html.Div([
-            html.Div([
-                html.Div("🔍  Filtri di ricerca", className="card-title"),
-                dbc.Row([_input(label,key,typ,opts if len(f)>3 else None)
-                         for f in FILTER_FIELDS
-                         for label,key,typ,*opts in [f]],
-                        style={"rowGap":"4px"}),
-                html.Div([
-                    dbc.Button("🔍  Cerca", id="btn-search", className="btn-pink"),
-                    dbc.Button("✕  Reset", id="btn-reset", className="btn-outline-purple",
-                               style={"marginLeft":"10px"}),
-                ], style={"marginTop":"8px"}),
-            ], className="card-box mb-3"),
-        ]),
+            html.Span("Logica di ricerca: ", style={"fontSize":"13px","fontWeight":"600","color":"#374151"}),
+            dbc.RadioItems(id="search-logic",
+                options=[{"label":"AND  (tutti i filtri)","value":"and"},
+                         {"label":"OR  (almeno un filtro)","value":"or"}],
+                value="and", inline=True,
+                style={"display":"inline-block","marginLeft":"12px","fontSize":"13px"}),
+        ], style={"background":"#F4F6F9","borderRadius":"10px","padding":"12px 18px",
+                  "marginBottom":"16px","display":"flex","alignItems":"center"}),
 
-        # Risultati
+        # Sezioni filtri in tab
+        dbc.Tabs([
+            dbc.Tab(label=sec_title, tab_id=f"sec-{i}",
+                    label_style={"fontWeight":"600","fontSize":"12px"})
+            for i, (sec_title, _) in enumerate(ALL_SECTIONS)
+        ], id="search-tabs", active_tab="sec-0", style={"marginBottom":"16px"}),
+
+        html.Div(id="search-filter-panel"),
+
+        html.Div([
+            dbc.Button("🔍  Cerca",  id="btn-search",  className="btn-pink"),
+            dbc.Button("✕  Reset",  id="btn-reset",   className="btn-outline-purple",
+                       style={"marginLeft":"10px"}),
+            dbc.Button("📥  Esporta CSV", id="btn-export-search", color="light",
+                       style={"marginLeft":"10px","borderRadius":"8px"}),
+        ], style={"marginBottom":"16px"}),
+
         html.Div(id="search-results"),
     ], style={"padding":"20px 24px"}),
+
+    dcc.Store(id="search-data-store"),
 ])
+
+# Genera ID unici per tutti i filtri
+ALL_FILTER_IDS = []
+for _, flist in ALL_SECTIONS:
+    for label, key, ftype, *_ in flist:
+        ALL_FILTER_IDS.append((key, ftype))
+
+
+@callback(Output("search-filter-panel","children"),
+          Input("search-tabs","active_tab"))
+def show_filters(tab):
+    idx = int(tab.split("-")[1])
+    _, flist = ALL_SECTIONS[idx]
+    return dbc.Row([_filter_widget(*f) for f in flist])
 
 
 @callback(
     Output("search-results","children"),
     Output("search-count","children"),
     Input("btn-search","n_clicks"),
-    Input("btn-reset","n_clicks"),
-    State("sf-code","value"),
-    State("sf-age_min","value"),   State("sf-age_max","value"),
-    State("sf-bmi_min","value"),   State("sf-bmi_max","value"),
-    State("sf-tumor_min","value"), State("sf-tumor_max","value"),
-    State("sf-grade","value"),
-    State("sf-er_status","value"), State("sf-pr_status","value"),
-    State("sf-her2_status","value"),
-    State("sf-multifocality","value"), State("sf-lymph_node","value"),
-    State("sf-prediction","value"), State("sf-actual_surgery","value"),
-    State("sf-ki67_max","value"),  State("sf-eating_min","value"),
-    prevent_initial_call=False,
+    State("search-logic","value"),
+    # Vital
+    State("sf-age_range","value"),State("sf-gender","value"),
+    State("sf-nazionalita","value"),State("sf-blood_type","value"),
+    # Clinical
+    State("sf-fumo","value"),State("sf-gravidanza","value"),
+    State("sf-alcohol","value"),State("sf-brca_mutation","value"),
+    State("sf-familiarita_carcinoma_ovarico","value"),
+    State("sf-diabetes","value"),State("sf-previous_breast_cancer","value"),
+    State("sf-tumor_size_mm","value"),State("sf-ki67","value"),
+    # Model
+    State("sf-struttura_ghiandolare","value"),
+    State("sf-rapporto_cuteDX","value"),State("sf-rapporto_cuteSX","value"),
+    State("sf-rapporto_areola_capezzoloDX","value"),State("sf-rapporto_areola_capezzoloSX","value"),
+    State("sf-stato_linfonodaleDX","value"),State("sf-stato_linfonodaleSX","value"),
+    State("sf-biRadsClinico","value"),State("sf-citologia_codifica","value"),
+    State("sf-focalita","value"),State("sf-ricostruzione","value"),
+    # Outcome
+    State("sf-last_prediction","value"),State("sf-DISEASE","value"),
+    State("sf-grading","value"),State("sf-clinical_stage","value"),
+    State("sf-er_status","value"),State("sf-pgr_status","value"),State("sf-cerbb2","value"),
+    prevent_initial_call=True,
 )
-def search(n_search, n_reset, code, age_min, age_max, bmi_min, bmi_max,
-           tumor_min, tumor_max, grade, er, pr, her2,
-           multi, lymph, pred, surgery, ki67_max, eating_min):
+def search(n, logic,
+           age_range, gender, nazionalita, blood_type,
+           fumo, gravidanza, alcohol, brca, fam_ovaio, diabete, prev_bc,
+           tumor_range, ki67_range,
+           struttura, cute_dx, cute_sx, areola_dx, areola_sx,
+           linfo_dx, linfo_sx, birads, citologia, focalita, ricost,
+           pred, disease, grading, stage, er, pgr, cerbb2):
 
-    rows = PatientRepository.get_all(search=code or "")
+    rows = PatientRepository.get_all()
 
-    def flt(row, key, val, op="eq"):
-        rv = row.get(key)
-        if rv is None or val is None or val == "": return True
-        if op == "ge":  return float(rv) >= float(val)
-        if op == "le":  return float(rv) <= float(val)
-        if op == "eq":  return str(rv) == str(val)
-        if op == "bool":return bool(rv) == (val == "Sì")
-        return True
+    def passes(r):
+        checks = []
+        def chk_select(val, field):
+            if not val: return True
+            return str(r.get(field,"")) == str(val)
+        def chk_multi(val, field):
+            if not val: return True
+            return str(r.get(field,"")) in val
+        def chk_range(val, field):
+            if not val: return True
+            lo, hi = val
+            v = r.get(field)
+            if v is None: return True
+            try: return lo <= float(v) <= hi
+            except: return True
+        def chk_text(val, field):
+            if not val: return True
+            return val.lower() in str(r.get(field,"")).lower()
 
-    def apply(rows):
-        out = []
-        for r in rows:
-            if not flt(r,"age",age_min,"ge"):           continue
-            if not flt(r,"age",age_max,"le"):           continue
-            if not flt(r,"bmi",bmi_min,"ge"):           continue
-            if not flt(r,"bmi",bmi_max,"le"):           continue
-            if not flt(r,"tumor_size_mm",tumor_min,"ge"): continue
-            if not flt(r,"tumor_size_mm",tumor_max,"le"): continue
-            if grade and str(r.get("grade","")) != grade: continue
-            if er and flt(r,"er_status",er,"bool") is False: continue
-            if er:
-                expected = er == "Positivo"
-                if bool(r.get("er_status")) != expected: continue
-            if pr:
-                expected = pr == "Positivo"
-                if bool(r.get("pr_status")) != expected: continue
-            if her2:
-                expected = her2 == "Positivo"
-                if bool(r.get("her2_status")) != expected: continue
-            if multi:
-                expected = multi == "Sì"
-                if bool(r.get("multifocality")) != expected: continue
-            if lymph:
-                expected = lymph == "Sì"
-                if bool(r.get("lymph_node_positive")) != expected: continue
-            if pred and r.get("last_prediction") != pred: continue
-            if surgery and r.get("actual_surgery","") != surgery: continue
-            if ki67_max and r.get("ki67_percent") is not None:
-                if float(r["ki67_percent"]) > float(ki67_max): continue
-            if eating_min and r.get("eating_habit_score") is not None:
-                if float(r["eating_habit_score"]) < float(eating_min): continue
-            out.append(r)
-        return out
+        checks += [
+            chk_multi(age_range,"age_range"), chk_select(gender,"gender"),
+            chk_text(nazionalita,"nazionalita"), chk_multi(blood_type,"blood_type"),
+            chk_select(fumo,"fumo"), chk_select(gravidanza,"gravidanza"),
+            chk_select(alcohol,"alcohol"), chk_select(brca,"brca_mutation"),
+            chk_select(fam_ovaio,"familiarita_carcinoma_ovarico"),
+            chk_select(diabete,"diabetes"), chk_select(prev_bc,"previous_breast_cancer"),
+            chk_range(tumor_range,"tumor_size_mm"), chk_range(ki67_range,"ki67"),
+            chk_multi(struttura,"struttura_ghiandolare"),
+            chk_multi(cute_dx,"rapporto_cuteDX"), chk_multi(cute_sx,"rapporto_cuteSX"),
+            chk_multi(areola_dx,"rapporto_areola_capezzoloDX"),
+            chk_multi(areola_sx,"rapporto_areola_capezzoloSX"),
+            chk_multi(linfo_dx,"stato_linfonodaleDX"),
+            chk_multi(linfo_sx,"stato_linfonodaleSX"),
+            chk_multi(birads,"biRadsClinico"),
+            chk_select(citologia,"citologia_codifica"),
+            chk_select(focalita,"focalita"), chk_select(ricost,"ricostruzione"),
+            chk_select(pred,"last_prediction"), chk_select(disease,"DISEASE"),
+            chk_multi(grading,"grading"), chk_multi(stage,"clinical_stage"),
+            chk_select(er,"er_status"), chk_select(pgr,"pgr_status"),
+            chk_select(cerbb2,"cerbb2"),
+        ]
+        # Rimuovi True triviali (filtri non attivi)
+        active = [c for c in checks]
+        if logic == "and":
+            return all(active)
+        else:
+            non_trivial = [c for c, (k,ft) in zip(active,ALL_FILTER_IDS)
+                           if _filter_active(k,ft,locals())]
+            return any(non_trivial) if non_trivial else True
 
-    filtered = apply(rows)
+    filtered = [r for r in rows if passes(r)]
 
     if not filtered:
         return (html.Div([
-            html.Div("🔎", style={"fontSize":"40px","textAlign":"center","marginBottom":"10px"}),
+            html.Div("🔎",style={"fontSize":"36px","textAlign":"center","marginBottom":"8px"}),
             html.Div("Nessun paziente corrisponde ai filtri.",
                      style={"textAlign":"center","color":"#6B7280","fontSize":"15px"}),
-        ], style={"padding":"60px 0"}),
-        f"0 pazienti trovati")
+        ],style={"padding":"50px 0"}), "0 pazienti")
 
     for r in filtered:
-        r["er_display"]   = "＋" if r.get("er_status")   else "－"
-        r["pr_display"]   = "＋" if r.get("pr_status")   else "－"
-        r["her2_display"] = "＋" if r.get("her2_status") else "－"
-        r["multi_display"]= "Sì" if r.get("multifocality") else "No"
-        r["lymph_display"]= "Sì" if r.get("lymph_node_positive") else "No"
         r.setdefault("last_prediction","—")
+        r.setdefault("DISEASE","—")
 
     table = dash_table.DataTable(
         data=filtered,
         columns=[
-            {"name":"Codice",      "id":"code"},
-            {"name":"Età",         "id":"age"},
-            {"name":"BMI",         "id":"bmi"},
-            {"name":"Tumore mm",   "id":"tumor_size_mm"},
-            {"name":"Grado",       "id":"grade"},
-            {"name":"ER",          "id":"er_display"},
-            {"name":"PR",          "id":"pr_display"},
-            {"name":"HER2",        "id":"her2_display"},
-            {"name":"Ki67%",       "id":"ki67_percent"},
-            {"name":"Multifoc.",   "id":"multi_display"},
-            {"name":"Linfonodi",   "id":"lymph_display"},
-            {"name":"Pred. AI",    "id":"last_prediction"},
-            {"name":"Chirurgia",   "id":"actual_surgery"},
-            {"name":"Score alim.", "id":"eating_habit_score"},
-            {"name":"Attività fis.","id":"physical_activity"},
-            {"name":"Aggiunto",    "id":"created_at"},
+            {"name":"Codice",    "id":"code"},
+            {"name":"Età",       "id":"age_range"},
+            {"name":"Sesso",     "id":"gender"},
+            {"name":"BI-RADS",   "id":"biRadsClinico"},
+            {"name":"Focalità",  "id":"focalita"},
+            {"name":"Linfon. DX","id":"stato_linfonodaleDX"},
+            {"name":"Citologia", "id":"citologia_codifica"},
+            {"name":"Pred. AI",  "id":"last_prediction"},
+            {"name":"DISEASE",   "id":"DISEASE"},
+            {"name":"Tumore mm", "id":"tumor_size_mm"},
+            {"name":"Grading",   "id":"grading"},
+            {"name":"Stadio",    "id":"clinical_stage"},
         ],
-        sort_action="native",
-        filter_action="native",
-        page_size=25,
+        sort_action="native", filter_action="native",
+        page_size=30, export_format="csv",
         style_table={"borderRadius":"12px","overflow":"hidden","border":"1px solid #E5E7EB"},
         style_cell={"textAlign":"left","padding":"10px 13px","fontSize":"12px",
                     "fontFamily":"Inter,Arial,sans-serif","border":"none",
@@ -187,23 +265,47 @@ def search(n_search, n_reset, code, age_min, age_max, bmi_min, bmi_max,
                       "fontSize":"11px","textTransform":"uppercase","letterSpacing":"0.5px",
                       "border":"none","borderBottom":"1px solid #E5E7EB"},
         style_data_conditional=[
-            {"if":{"filter_query":"{last_prediction} = 'BCS'","column_id":"last_prediction"},
+            {"if":{"filter_query":"{last_prediction} = 'CONSERVATIVA'","column_id":"last_prediction"},
              "color":"#059669","fontWeight":"700"},
-            {"if":{"filter_query":"{last_prediction} = 'Mastectomy'","column_id":"last_prediction"},
+            {"if":{"filter_query":"{last_prediction} = 'MASTECTOMIA'","column_id":"last_prediction"},
              "color":"#DC2626","fontWeight":"700"},
-            {"if":{"state":"selected"},"backgroundColor":"#FDF2F8","border":"none"},
         ],
         style_as_list_view=True,
-        export_format="csv",
     )
+    return table, f"{len(filtered)} pazienti trovati (logica: {logic.upper()})"
 
-    return table, f"{len(filtered)} pazienti trovati"
+
+def _filter_active(key, ftype, loc):
+    v = loc.get(f"sf_{key}")
+    if v is None or v == "" or v == []: return False
+    return True
 
 
+# Reset
 @callback(
-    *[Output(f"sf-{key}","value") for _,key,*_ in FILTER_FIELDS],
+    Output("sf-age_range","value"), Output("sf-gender","value"),
+    Output("sf-nazionalita","value"), Output("sf-blood_type","value"),
+    Output("sf-fumo","value"), Output("sf-gravidanza","value"),
+    Output("sf-alcohol","value"), Output("sf-brca_mutation","value"),
+    Output("sf-familiarita_carcinoma_ovarico","value"),
+    Output("sf-diabetes","value"), Output("sf-previous_breast_cancer","value"),
+    Output("sf-tumor_size_mm","value"), Output("sf-ki67","value"),
+    Output("sf-struttura_ghiandolare","value"),
+    Output("sf-rapporto_cuteDX","value"), Output("sf-rapporto_cuteSX","value"),
+    Output("sf-rapporto_areola_capezzoloDX","value"),Output("sf-rapporto_areola_capezzoloSX","value"),
+    Output("sf-stato_linfonodaleDX","value"),Output("sf-stato_linfonodaleSX","value"),
+    Output("sf-biRadsClinico","value"),Output("sf-citologia_codifica","value"),
+    Output("sf-focalita","value"),Output("sf-ricostruzione","value"),
+    Output("sf-last_prediction","value"),Output("sf-DISEASE","value"),
+    Output("sf-grading","value"),Output("sf-clinical_stage","value"),
+    Output("sf-er_status","value"),Output("sf-pgr_status","value"),Output("sf-cerbb2","value"),
     Input("btn-reset","n_clicks"),
     prevent_initial_call=True,
 )
-def reset_filters(_):
-    return [""] * len(FILTER_FIELDS)
+def reset_all(_):
+    return ([],[],"",[],
+            "","","","","","","",
+            [0,200],[0,100],
+            [],[],[],[],[],[],[],[],
+            "","","",
+            "","","","","","","")
