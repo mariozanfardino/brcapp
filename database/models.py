@@ -25,6 +25,13 @@ class Patient(Base):
     patient_pin   = Column(String(256), nullable=True)
     patient_email = Column(String(120), nullable=True)
     initials      = Column(String(20),  nullable=True)
+    # Dati identificativi — mostrati solo nel portale paziente (pseudonimizzazione nelle viste staff)
+    first_name    = Column(String(80),  nullable=True)
+    last_name     = Column(String(80),  nullable=True)
+    fiscal_code   = Column(String(16),  nullable=True)
+    birth_place   = Column(String(80),  nullable=True)
+    phone         = Column(String(30),  nullable=True)
+    address       = Column(String(200), nullable=True)
 
     clinical        = relationship("ClinicalRecord", back_populates="patient",
                                    uselist=False, cascade="all, delete")
@@ -208,6 +215,8 @@ class User(Base):
     is_active=Column(Boolean,default=True)
     created_at=Column(DateTime,default=datetime.utcnow)
     last_login=Column(DateTime,nullable=True)
+    oauth_provider=Column(String(30),nullable=True)
+    oauth_subject=Column(String(255),nullable=True)
     group=relationship("UserGroup",back_populates="users")
     def to_dict(self):
         return {"id":self.id,"username":self.username,
@@ -217,3 +226,109 @@ class User(Base):
                 "is_active":self.is_active,
                 "created_at":self.created_at.strftime("%Y-%m-%d") if self.created_at else "",
                 "last_login":self.last_login.strftime("%Y-%m-%d %H:%M") if self.last_login else "Mai"}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PORTALE PAZIENTE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class PatientAccount(Base):
+    """Credenziali del paziente, separate dal record clinico (1:1 con Patient)."""
+    __tablename__ = "patient_accounts"
+    id                 = Column(Integer, primary_key=True, autoincrement=True)
+    patient_id         = Column(Integer, ForeignKey("patients.id"), unique=True, nullable=False)
+    email              = Column(String(254), unique=True, nullable=False, index=True)
+    password_hash      = Column(String(256), nullable=True)      # null se solo OAuth
+    email_verified     = Column(Boolean, default=False, nullable=False)
+    verified_at        = Column(DateTime, nullable=True)
+    oauth_provider     = Column(String(30),  nullable=True)
+    oauth_subject      = Column(String(255), nullable=True)
+    consent_privacy_at = Column(DateTime, nullable=True)         # informativa art. 13 GDPR
+    consent_email      = Column(Boolean, default=False, nullable=False)  # promemoria via email (opt-in)
+    failed_logins      = Column(Integer, default=0, nullable=False)
+    locked_until       = Column(DateTime, nullable=True)
+    is_active          = Column(Boolean, default=True, nullable=False)
+    created_at         = Column(DateTime, default=datetime.utcnow)
+    last_login         = Column(DateTime, nullable=True)
+    patient            = relationship("Patient")
+
+
+class Appointment(Base):
+    """Appuntamento — stati allineati a HL7 FHIR Appointment.status."""
+    __tablename__ = "appointments"
+    id                   = Column(Integer, primary_key=True, autoincrement=True)
+    patient_id           = Column(Integer, ForeignKey("patients.id"), nullable=False, index=True)
+    start_at             = Column(DateTime, nullable=False, index=True)   # UTC (naive)
+    duration_min         = Column(Integer, default=30, nullable=False)
+    appointment_type     = Column(String(80), nullable=False)
+    location             = Column(String(150), nullable=True)
+    clinician            = Column(String(100), nullable=True)
+    patient_instructions = Column(Text, nullable=True)
+    status               = Column(String(20), default="booked", nullable=False)  # booked|cancelled|fulfilled|noshow
+    confirmation_sent_at = Column(DateTime, nullable=True)
+    reminder_sent_at     = Column(DateTime, nullable=True)
+    created_by           = Column(String(60), nullable=True)
+    created_at           = Column(DateTime, default=datetime.utcnow)
+    cancelled_at         = Column(DateTime, nullable=True)
+    patient              = relationship("Patient")
+
+
+class ClinicalDocument(Base):
+    """Referto della cartella clinica (visibile al paziente solo se rilasciato)."""
+    __tablename__ = "clinical_documents"
+    id                  = Column(Integer, primary_key=True, autoincrement=True)
+    patient_id          = Column(Integer, ForeignKey("patients.id"), nullable=False, index=True)
+    category            = Column(String(20), nullable=False)   # LAB|IMAGING|PATHOLOGY|VISIT|OTHER
+    title               = Column(String(150), nullable=False)
+    issued_at           = Column(DateTime, nullable=False)
+    author              = Column(String(100), nullable=True)
+    department          = Column(String(100), nullable=True)
+    body                = Column(Text, nullable=True)
+    status              = Column(String(20), default="final")  # preliminary|final|amended
+    released_to_patient = Column(Boolean, default=False, nullable=False)
+    released_at         = Column(DateTime, nullable=True)
+    created_by          = Column(String(60), nullable=True)
+    created_at          = Column(DateTime, default=datetime.utcnow)
+    patient             = relationship("Patient")
+    results             = relationship("LabResult", back_populates="document",
+                                       cascade="all, delete-orphan", order_by="LabResult.id")
+
+
+class LabResult(Base):
+    """Singolo valore di laboratorio collegato a un referto."""
+    __tablename__ = "lab_results"
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    document_id = Column(Integer, ForeignKey("clinical_documents.id"), nullable=False, index=True)
+    analyte     = Column(String(100), nullable=False)
+    value       = Column(String(40),  nullable=False)
+    unit        = Column(String(30),  nullable=True)
+    ref_range   = Column(String(40),  nullable=True)
+    flag        = Column(String(2),   nullable=True)   # H | L | N
+    document    = relationship("ClinicalDocument", back_populates="results")
+
+
+class EmailLog(Base):
+    """Registro di tutte le comunicazioni email (inviate, in outbox o fallite)."""
+    __tablename__ = "email_log"
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    to_addr    = Column(String(254), nullable=False)
+    subject    = Column(String(200), nullable=False)
+    kind       = Column(String(40),  nullable=False)   # verify|reset|appt_confirm|appt_reminder|appt_cancel
+    related_id = Column(Integer, nullable=True)
+    status     = Column(String(20),  nullable=False)   # sent|outbox|failed
+    error      = Column(Text, nullable=True)
+
+
+class AuditLog(Base):
+    """Audit trail di accessi e operazioni su dati sanitari."""
+    __tablename__ = "audit_log"
+    id          = Column(Integer, primary_key=True, autoincrement=True)
+    ts          = Column(DateTime, default=datetime.utcnow, index=True)
+    actor_type  = Column(String(10), nullable=False)    # staff|patient|system|anon
+    actor_id    = Column(String(60), nullable=True)
+    action      = Column(String(50), nullable=False)
+    resource    = Column(String(40), nullable=True)
+    resource_id = Column(String(40), nullable=True)
+    ip          = Column(String(45), nullable=True)
+    detail      = Column(Text, nullable=True)

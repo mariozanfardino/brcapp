@@ -269,3 +269,52 @@ body { background-color: #F4F6F9; margin: 0; }
     text-align:center; margin-top:16px; font-size:13px; color:#6B7280;
 }
 .login-toggle a { color:#D63384; font-weight:600; text-decoration:none; }
+
+/* ── Auth & Portale Paziente (v2) ─────────────────────────────────────── */
+.auth-divider{display:flex;align-items:center;gap:10px;color:#9CA3AF;font-size:12px;margin:20px 0 12px}
+.auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:#E5E7EB}
+.oauth-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:44px;
+  border:1px solid #D1D5DB;border-radius:8px;background:#fff;color:#1A1A2E !important;
+  font-weight:600;font-size:14px;text-decoration:none !important;margin-bottom:8px;transition:.15s}
+.oauth-btn:hover{border-color:#D63384;background:#FDF2F8}
+.oauth-icon{font-weight:800;font-size:15px;width:20px;text-align:center}
+.auth-links{display:flex;justify-content:space-between;margin-top:14px;font-size:13px}
+.auth-links a{color:#D63384;font-weight:600;text-decoration:none}
+.pw-hint{font-size:11px;color:#6B7280;margin:-8px 0 12px}
+.consent-box{background:#F8F9FA;border-radius:8px;padding:12px 14px;font-size:12px;color:#374151;margin:6px 0 16px}
+
+.portal-shell{max-width:1100px;margin:0 auto;padding:24px 20px 60px}
+.portal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.portal-hero{background:linear-gradient(135deg,#D63384,#4A235A);border-radius:16px;color:#fff;
+  padding:26px 30px;display:flex;align-items:center;gap:22px;margin-bottom:22px}
+.portal-avatar{width:62px;height:62px;border-radius:50%;background:rgba(255,255,255,.22);display:flex;
+  align-items:center;justify-content:center;font-size:24px;font-weight:800;flex-shrink:0}
+.portal-hero h2{margin:0;font-size:22px;font-weight:800}
+.portal-hero .sub{opacity:.85;font-size:13px;margin-top:4px}
+.portal-kpi{background:rgba(255,255,255,.16);border-radius:10px;padding:8px 14px;font-size:12px;text-align:center}
+.portal-kpi b{display:block;font-size:18px}
+.field-card{background:#F8F9FA;border-radius:10px;padding:11px 14px;height:100%}
+.field-label{font-size:10px;color:#9CA3AF;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.field-value{font-size:14px;font-weight:600;color:#1A1A2E;word-break:break-word}
+.doc-meta{font-size:12px;color:#6B7280}
+.doc-body{white-space:pre-line;font-size:14px;line-height:1.6;color:#1F2937}
+.cat-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;margin-right:8px;text-transform:uppercase}
+.cat-LAB{background:#E0F2FE;color:#0369A1}.cat-IMAGING{background:#EDE7F6;color:#4A235A}
+.cat-PATHOLOGY{background:#FCE7F3;color:#BE185D}.cat-VISIT{background:#DCFCE7;color:#15803D}
+.cat-OTHER{background:#F3F4F6;color:#374151}
+.lab-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.lab-table th{background:#F4F6F9;color:#4A235A;font-size:11px;text-transform:uppercase;padding:8px 10px;text-align:left}
+.lab-table td{padding:8px 10px;border-bottom:1px solid #F3F4F6}
+.flag-H{color:#DC2626;font-weight:700}.flag-L{color:#2563EB;font-weight:700}
+.appt-card{border:1px solid #E5E7EB;border-left:5px solid #D63384;border-radius:12px;padding:16px 18px;
+  background:#fff;margin-bottom:12px;display:flex;gap:18px;align-items:flex-start}
+.appt-date{min-width:74px;text-align:center;background:#FDF2F8;border-radius:10px;padding:8px 6px}
+.appt-date .d{font-size:26px;font-weight:800;color:#D63384;line-height:1}
+.appt-date .m{font-size:11px;text-transform:uppercase;color:#4A235A;font-weight:700}
+.appt-title{font-weight:700;font-size:15px}
+.appt-info{font-size:13px;color:#4B5563;margin-top:3px}
+.appt-instr{font-size:12px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px 10px;margin-top:8px}
+.badge-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px}
+.st-booked{background:#DCFCE7;color:#15803D}.st-cancelled{background:#FEE2E2;color:#B91C1C}
+.st-fulfilled{background:#E0E7FF;color:#3730A3}.st-noshow{background:#F3F4F6;color:#374151}
+@media (max-width:768px){.portal-hero{flex-direction:column;text-align:center}.appt-card{flex-direction:column}}

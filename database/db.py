@@ -129,8 +129,8 @@ class StatisticsRepository:
         with read_scope() as db:
             total_p = db.query(func.count(Patient.id)).scalar() or 0
             total_c = db.query(func.count(ClassificationResult.id)).scalar() or 0
-            bcs     = db.query(func.count(ClassificationResult.id))                        .filter(ClassificationResult.predicted_class=="BCS").scalar() or 0
-            mast    = db.query(func.count(ClassificationResult.id))                        .filter(ClassificationResult.predicted_class=="Mastectomy").scalar() or 0
+            bcs     = db.query(func.count(ClassificationResult.id))                        .filter(ClassificationResult.predicted_class=="CONSERVATIVA").scalar() or 0
+            mast    = db.query(func.count(ClassificationResult.id))                        .filter(ClassificationResult.predicted_class=="MASTECTOMIA").scalar() or 0
 
             # BMI calcolato in Python (SQLite non ha POW standard)
             rows = db.query(ClinicalRecord.peso, ClinicalRecord.altezza)                     .filter(ClinicalRecord.peso != None,
@@ -140,8 +140,8 @@ class StatisticsRepository:
             avg_bmi = round(sum(bmis)/len(bmis), 1) if bmis else 0
 
             # DISEASE dal campo clinico (chirurgia effettiva)
-            bcs_real  = db.query(func.count(ClinicalRecord.id))                          .filter(ClinicalRecord.DISEASE == "BCS").scalar() or 0
-            mast_real = db.query(func.count(ClinicalRecord.id))                          .filter(ClinicalRecord.DISEASE == "Mastectomy").scalar() or 0
+            bcs_real  = db.query(func.count(ClinicalRecord.id))                          .filter(ClinicalRecord.DISEASE == "CONSERVATIVA").scalar() or 0
+            mast_real = db.query(func.count(ClinicalRecord.id))                          .filter(ClinicalRecord.DISEASE == "MASTECTOMIA").scalar() or 0
 
             return {
                 "total_patients":        total_p,

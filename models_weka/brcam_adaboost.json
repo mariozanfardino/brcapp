@@ -1,0 +1,395 @@
+{
+ "source": "Adaboost.model",
+ "algorithm": "weka.classifiers.meta.AdaBoostM1 + DecisionStump",
+ "relation": "dataset-weka.filters.unsupervised.attribute.Remove-R2-3,6-7,17,20",
+ "class_index": 15,
+ "attributes": [
+  {
+   "name": "età",
+   "values": [
+    "Over_75",
+    "37-49",
+    "50-65",
+    "66-75",
+    "26-36",
+    "18-25"
+   ]
+  },
+  {
+   "name": "fumo",
+   "values": [
+    "si",
+    "no"
+   ]
+  },
+  {
+   "name": "gravidanza",
+   "values": [
+    "no",
+    "si"
+   ]
+  },
+  {
+   "name": "familiarità_carcinoma_ovarico",
+   "values": [
+    "no",
+    "si"
+   ]
+  },
+  {
+   "name": "struttura_ghiandolare",
+   "values": [
+    "Displasia_fibronodulare",
+    "Normale",
+    "Displasia_fibrocistica",
+    "Displasia_fibroadiposa",
+    "Involuzione_fibroadiposa",
+    "Displasia_fibrosa",
+    "Displasia",
+    "Involuzione_adiposa",
+    "Adenosi",
+    "Distrofia",
+    "Displasia_micronodulare",
+    "Esiti_chirurgici",
+    "Displasia_nodulare",
+    "Displasia_fibroadenosa",
+    "Displasia_fibroghiandolare"
+   ]
+  },
+  {
+   "name": "rapporto_cuteDX",
+   "values": [
+    "Esiti_chirurgici",
+    "Regolare",
+    "Ulcerazione",
+    "Retrazione_indotta",
+    "Edematoso",
+    "Eritema",
+    "Retrazione",
+    "Infiltrazione",
+    "Retrazione_Iniziale",
+    "Esiti_Mastectomy",
+    "Ispessimento",
+    "Esiti_BCS",
+    "Papule"
+   ]
+  },
+  {
+   "name": "rapporto_cuteSX",
+   "values": [
+    "Regolare",
+    "Retrazione",
+    "Infiltrazione",
+    "Esiti_Mastectomy",
+    "Esiti_chirurgici",
+    "Edematoso",
+    "Esiti_BCS",
+    "Retrazione_Iniziale",
+    "Ulcerazione",
+    "Retrazione_indotta",
+    "Ispessimento",
+    "Eritema",
+    "Papule"
+   ]
+  },
+  {
+   "name": "rapporto_areola_capezzoloDX",
+   "values": [
+    "Regolare",
+    "Retrazione",
+    "Scraping",
+    "Ulcerazione",
+    "Edema",
+    "Introflessione",
+    "Infiltrazione",
+    "Non_distinguibile",
+    "Esiti_chirurgici",
+    "Appiattito",
+    "Assente",
+    "Secrezione",
+    "Disepitelizzazione",
+    "Ispessimento"
+   ]
+  },
+  {
+   "name": "rapporto_areola_capezzoloSX",
+   "values": [
+    "Regolare",
+    "Infiltrazione",
+    "Introflessione",
+    "Retrazione",
+    "Appiattito",
+    "Ulcerazione",
+    "Disepitelizzazione",
+    "Esiti_chirurgici",
+    "Secrezione",
+    "Assente",
+    "Ispessimento"
+   ]
+  },
+  {
+   "name": "stato_linfonodaleDX",
+   "values": [
+    "Normale",
+    "Sospetto_adenopatia",
+    "Pacchetto_linfonodale",
+    "Adenopatia",
+    "Esiti_chirurgici"
+   ]
+  },
+  {
+   "name": "stato_linfonodaleSX",
+   "values": [
+    "Normale",
+    "Sospetto_adenopatia",
+    "Adenopatia",
+    "Pacchetto_linfonodale",
+    "Esiti_chirurgici"
+   ]
+  },
+  {
+   "name": "biRadsClinico",
+   "values": [
+    "E5",
+    "E4",
+    "E3",
+    "Bil:E4-E3/E3-E4",
+    "E1",
+    "Bil:E5-E4/E4-E5",
+    "Bil:E4-E1/E1-E4",
+    "E2",
+    "Bil:E1-E3/E3-E1",
+    "E0",
+    "Bil:E5-E2/E2-E5",
+    "Bil:E5-E3/E3-E5",
+    "Bil:E5-E1/E1-E5"
+   ]
+  },
+  {
+   "name": "citologia_codifica",
+   "values": [
+    "C5",
+    "C4",
+    "C2",
+    "C1",
+    "C0",
+    "C3",
+    "Bil:C5-C4/C4-C5",
+    "Bil:C5-C3/C3-C5"
+   ]
+  },
+  {
+   "name": "focalità",
+   "values": [
+    "no",
+    "si",
+    "Bil:si-no/no-si"
+   ]
+  },
+  {
+   "name": "ricostruzione",
+   "values": [
+    "si"
+   ]
+  },
+  {
+   "name": "Disease",
+   "values": [
+    "MASTECTOMIA",
+    "CONSERVATIVA"
+   ]
+  }
+ ],
+ "stumps": [
+  {
+   "att_index": 14,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.9881081081081081,
+     0.011891891891891892
+    ],
+    [
+     0.05867215645908389,
+     0.9413278435409161
+    ],
+    [
+     0.05867215645908389,
+     0.9413278435409161
+    ]
+   ],
+   "beta": 2.9512424729831905
+  },
+  {
+   "att_index": 11,
+   "split_value": 4,
+   "distribution": [
+    [
+     0.17021276595744683,
+     0.8297872340425532
+    ],
+    [
+     0.8669293381955658,
+     0.13307066180443425
+    ],
+    [
+     0.31858556709339453,
+     0.6814144329066056
+    ]
+   ],
+   "beta": 1.2074217891957228
+  },
+  {
+   "att_index": 3,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.823095980253659,
+     0.17690401974634093
+    ],
+    [
+     0.09596257026679361,
+     0.9040374297332064
+    ],
+    [
+     0.3721203261213585,
+     0.6278796738786414
+    ]
+   ],
+   "beta": 1.049830523667512
+  },
+  {
+   "att_index": 13,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.8281078461692603,
+     0.17189215383073975
+    ],
+    [
+     0.38090995435077263,
+     0.6190900456492273
+    ],
+    [
+     0.3787543345800227,
+     0.6212456654199773
+    ]
+   ],
+   "beta": 1.0123292782090283
+  },
+  {
+   "att_index": 14,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.9079027107221532,
+     0.09209728927784676
+    ],
+    [
+     0.5880627356711746,
+     0.4119372643288253
+    ],
+    [
+     0.5880627356711746,
+     0.4119372643288253
+    ]
+   ],
+   "beta": 0.5383293043979066
+  },
+  {
+   "att_index": 14,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.8519480608634542,
+     0.14805193913654582
+    ],
+    [
+     0.45453425321634766,
+     0.5454657467836522
+    ],
+    [
+     0.45453425321634766,
+     0.5454657467836522
+    ]
+   ],
+   "beta": 0.32494356853104517
+  },
+  {
+   "att_index": 8,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.5231571728022578,
+     0.47684282719774224
+    ],
+    [
+     0.8684127940539549,
+     0.1315872059460451
+    ],
+    [
+     0.9511119496539773,
+     0.04888805034602268
+    ]
+   ],
+   "beta": 0.2564230226741228
+  },
+  {
+   "att_index": 8,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.45915918976366865,
+     0.5408408102363313
+    ],
+    [
+     0.8362483042177804,
+     0.1637516957822196
+    ],
+    [
+     0.9377120980444821,
+     0.062287901955517866
+    ]
+   ],
+   "beta": 0.2949529180762172
+  },
+  {
+   "att_index": 0,
+   "split_value": 1,
+   "distribution": [
+    [
+     0.36781193006509194,
+     0.6321880699349082
+    ],
+    [
+     0.6296590460485748,
+     0.3703409539514252
+    ],
+    [
+     0.0,
+     1.0
+    ]
+   ],
+   "beta": 0.5338343292847685
+  },
+  {
+   "att_index": 1,
+   "split_value": 0,
+   "distribution": [
+    [
+     0.45266658242936003,
+     0.54733341757064
+    ],
+    [
+     0.5647651606858592,
+     0.4352348393141408
+    ],
+    [
+     0.2502704475095861,
+     0.749729552490414
+    ]
+   ],
+   "beta": 0.3393822417129438
+  }
+ ]
+}

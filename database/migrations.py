@@ -3,6 +3,10 @@ from sqlalchemy import text
 log = logging.getLogger(__name__)
 
 MIGRATIONS = [
+    ("patients","first_name","TEXT"),("patients","last_name","TEXT"),
+    ("patients","fiscal_code","TEXT"),("patients","birth_place","TEXT"),
+    ("patients","phone","TEXT"),("patients","address","TEXT"),
+    ("users","oauth_provider","TEXT"),("users","oauth_subject","TEXT"),
     # patients
     ("patients","gender","TEXT"),("patients","nazionalita","TEXT"),
     ("patients","birth_date","TEXT"),("patients","age_range","TEXT"),

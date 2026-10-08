@@ -5,6 +5,7 @@ ALL_PAGES = [
     ("/patients",       "👥", "Pazienti",         None),
     ("/classification", "🔬", "Classificazione",  "can_classify"),
     ("/statistics",     "📊", "Statistiche",      None),
+    ("/agenda",         "📅", "Agenda & Referti", "can_classify"),
     ("/xai",            "🧠", "Explainable AI",   None),
     ("/search",         "🔍", "Ricerca Avanzata", None),
     ("/admin/users",    "⚙️", "Utenti & Gruppi", "can_manage_users"),
@@ -19,7 +20,7 @@ def sidebar(pathname="/", user=None):
     allowed = perms.get("pages",["/"])
 
     sections = {
-        "Principale": ["/","/patients","/classification","/statistics"],
+        "Principale": ["/","/patients","/classification","/statistics","/agenda"],
         "Analisi": ["/xai","/search"],
         "Amministrazione": ["/admin/users","/admin/pins"],
     }
@@ -58,7 +59,7 @@ def sidebar(pathname="/", user=None):
                 html.Div(ROLE_LABELS.get(role,role),  className="user-role"),
             ]),
         ], className="user-badge", style={"marginBottom":"6px","cursor":"default"})
-        logout = html.A("↩  Esci", href="/logout",
+        logout = html.A("↩  Esci", href="/auth/logout",
                         style={"fontSize":"12px","color":"#6B7280","display":"block",
                                "textAlign":"center","textDecoration":"none","marginTop":"4px"})
     else:

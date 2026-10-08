@@ -8,7 +8,7 @@ from database.models import User, UserGroup
 # ── Permessi per ruolo ────────────────────────────────────────────────────────
 ROLE_PERMISSIONS = {
     "admin": {
-        "pages":    ["/", "/patients", "/classification", "/statistics", "/admin/users", "/admin/pins", "/xai", "/search"],
+        "pages":    ["/", "/patients", "/classification", "/statistics", "/admin/users", "/admin/pins", "/xai", "/search", "/agenda"],
         "can_classify":     True,
         "can_edit_patients":True,
         "can_manage_users": True,
@@ -16,7 +16,7 @@ ROLE_PERMISSIONS = {
         "color": "#DC2626",
     },
     "clinician": {
-        "pages":    ["/", "/patients", "/classification", "/statistics", "/xai", "/search"],
+        "pages":    ["/", "/patients", "/classification", "/statistics", "/xai", "/search", "/agenda"],
         "can_classify":     True,
         "can_edit_patients":True,
         "can_manage_users": False,
@@ -166,7 +166,9 @@ import random, string as _string
 from database.models import Patient, ClinicalRecord, ClassificationResult
 
 def generate_pin(length=6) -> str:
-    return "".join(random.choices(_string.digits, k=length))
+    """Codice di attivazione portale: CSPRNG, monouso (consumato alla registrazione)."""
+    import secrets
+    return "".join(secrets.choice(_string.digits) for _ in range(length))
 
 class PatientAuthRepository:
 
@@ -177,56 +179,6 @@ class PatientAuthRepository:
             p = db.query(Patient).filter(Patient.id == patient_id).first()
             if p:
                 p.patient_pin = generate_password_hash(pin)
-
-    @staticmethod
-    def authenticate(code: str, pin: str) -> dict | None:
-        from werkzeug.security import check_password_hash
-        import datetime
-        with read_scope() as db:
-            p = db.query(Patient).filter(Patient.code == code.strip().upper()).first()
-            if not p or not p.patient_pin:
-                return None
-            if not check_password_hash(p.patient_pin, pin):
-                return None
-            cd = p.clinical_data
-            eh = p.eating_habits
-            clf_list = sorted(p.classifications, key=lambda x: x.run_at, reverse=True)
-            last_clf = clf_list[0] if clf_list else None
-            return {
-                "type":         "patient",
-                "id":           p.id,
-                "code":         p.code,
-                "initials":     p.initials or p.code,
-                "age":          p.age,
-                "bmi":          p.bmi,
-                "tumor_size_mm":    cd.tumor_size_mm     if cd else None,
-                "grade":            cd.grade             if cd else None,
-                "er_status":        cd.er_status         if cd else None,
-                "pr_status":        cd.pr_status         if cd else None,
-                "her2_status":      cd.her2_status       if cd else None,
-                "ki67_percent":     cd.ki67_percent      if cd else None,
-                "multifocality":    cd.multifocality     if cd else None,
-                "lymph_node_positive": cd.lymph_node_positive if cd else None,
-                "actual_surgery":   cd.actual_surgery    if cd else None,
-                "eating_habit_score": eh.eating_habit_score if eh else None,
-                "physical_activity":  eh.physical_activity  if eh else None,
-                "smoking":          eh.smoking           if eh else None,
-                "alcohol":          eh.alcohol           if eh else None,
-                "mediterranean_diet": eh.mediterranean_diet if eh else None,
-                "last_prediction":  last_clf.predicted_class if last_clf else None,
-                "last_conf_bcs":    last_clf.confidence_bcs  if last_clf else None,
-                "last_conf_mast":   last_clf.confidence_mast if last_clf else None,
-                "last_clf_date":    last_clf.run_at.strftime("%d/%m/%Y %H:%M") if last_clf else None,
-                "clf_history": [
-                    {
-                        "date":       c.run_at.strftime("%d/%m/%Y"),
-                        "prediction": c.predicted_class,
-                        "conf_bcs":   round(c.confidence_bcs*100,1) if c.confidence_bcs else None,
-                        "conf_mast":  round(c.confidence_mast*100,1) if c.confidence_mast else None,
-                    }
-                    for c in clf_list
-                ],
-            }
 
     @staticmethod
     def get_all_with_pin_status() -> list:

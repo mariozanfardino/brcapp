@@ -2,7 +2,7 @@ import dash
 from dash import html, dcc, callback, Output, Input, State
 import dash_bootstrap_components as dbc
 from database.db import ClassificationRepository, PatientRepository
-from ml.weka_bridge import (run_classification, FEATURES, FEATURE_NAMES,
+from ml.weka_bridge import (patient_model_features, run_classification, unseen_features, FEATURES, FEATURE_NAMES,
                              FEATURE_LABELS, FEATURE_GROUPS,
                              CLASS_DISPLAY, CLASS_COLOR)
 from config import PINK, PURPLE
@@ -29,6 +29,22 @@ def _safe_id(feat):
     return feat.replace('à','a').replace('è','e').replace('ì','i').replace('ò','o').replace('ù','u')
 
 
+def _model_note(ver, features):
+    unseen = unseen_features(features)
+    note = [html.Div(f"Modello: {ver}")]
+    if unseen:
+        names = ", ".join(FEATURE_LABELS.get(f, f) for f in unseen)
+        note.append(html.Div(f"⚠ Valori mai visti in addestramento ({names}): "
+                             "trattati dal modello come dato mancante.",
+                             style={"color": "#B45309", "marginTop": "4px"}))
+    return note
+
+
+def _patient_options():
+    return [{"label": p["code"] + ("  ✓ già classificato" if p.get("last_prediction") else ""),
+             "value": p["id"]} for p in PatientRepository.get_all()]
+
+
 def _conf_row(label, key, color):
     return html.Div([html.Div([
         html.Span(label, style={"fontSize":"13px","minWidth":"110px"}),
@@ -41,7 +57,8 @@ def _conf_row(label, key, color):
     ], style={"display":"flex","alignItems":"center","gap":"10px","marginBottom":"8px"})])
 
 
-layout = html.Div([
+def layout(pid=None, **kwargs):
+  return html.Div([
     html.Div([
         html.Div([
             html.H1("Classificazione AI", className="page-title"),
@@ -63,6 +80,8 @@ layout = html.Div([
                     html.P("Opzionale — pre-compila i campi se disponibili.",
                            style={"fontSize":"12px","color":"#6B7280","marginBottom":"8px"}),
                     dcc.Dropdown(id="pt-select", placeholder="— Nuovo soggetto —",
+                                 options=_patient_options(),
+                                 value=int(pid) if str(pid or "").isdigit() else None,
                                  clearable=True, style={"fontSize":"13px"}),
                 ], className="card-box mb-3"),
 
@@ -121,8 +140,8 @@ def show_badge(_):
     info  = get_model_info()
     active= info.get("active", False)
     color = "#059669" if active else "#F59E0B"
-    label = ("✓  Modello WEKA originale attivo" if active
-             else "⚠  Fallback scikit-learn attivo")
+    label = ("✓  Modello BrCaM originale attivo" if active
+             else "⚠  Fallback SINTETICO attivo (solo sviluppo)")
     return html.Span(label, style={"background":color+"22","color":color,
                                     "fontWeight":"700","fontSize":"12px",
                                     "padding":"6px 14px","borderRadius":"20px"})
@@ -131,24 +150,20 @@ def show_badge(_):
 @callback(Output("pt-select","options"),
           Input("clf-store","data"), Input("clf-init","n_intervals"))
 def refresh_dd(_,__):
-    return [{"label":p["code"],"value":p["id"]}
-            for p in PatientRepository.get_all()]
+    return _patient_options()
 
 
 # Pre-compila dal paziente (se i dati sono presenti nel DB)
 @callback(
     *[Output(f"feat-{_safe_id(f)}","value") for f in FEATURE_NAMES],
     Input("pt-select","value"),
-    prevent_initial_call=True,
 )
 def fill_patient(pid):
-    empty = [""] * len(FEATURE_NAMES)
-    if not pid: return empty
-    pts = PatientRepository.get_all()
-    p   = next((x for x in pts if x.get("id")==int(pid)), {})
-    # Mappa: il DB potrebbe non avere queste feature nominali
-    # restituisce "" se non presente
-    return [str(p.get(f,"")) or "" for f in FEATURE_NAMES]
+    if not pid:
+        return [""] * len(FEATURE_NAMES)
+    p = PatientRepository.get_by_id(int(pid)) or {}
+    feats = patient_model_features(p)
+    return [feats[f] for f in FEATURE_NAMES]
 
 
 @callback(
@@ -161,6 +176,7 @@ def fill_patient(pid):
     Output("clf-history","children"),
     Output("clf-error","children"),
     Output("clf-store","data"),
+    *[Output(f"feat-{_safe_id(f)}","invalid") for f in FEATURE_NAMES],
     Input("btn-classify","n_clicks"),
     State("pt-select","value"),
     *[State(f"feat-{_safe_id(f)}","value") for f in FEATURE_NAMES],
@@ -179,7 +195,8 @@ def classify(n_clicks, pid, *args):
         return ("⚠️","Dati incompleti",
                 {"fontSize":"18px","fontWeight":"700","color":"#F59E0B","textAlign":"center"},
                 0,"—%",0,"—%","",dash.no_update,
-                f"Seleziona tutti i campi ({len(missing)} mancanti): {short}",dash.no_update)
+                f"Seleziona tutti i campi ({len(missing)} mancanti, in rosso): {short}",dash.no_update,
+                *[not v for v in feat_vals])
 
     features = {f: v for f,v in zip(FEATURE_NAMES, feat_vals)}
     label, c_cons, c_mast, ver = run_classification(features)
@@ -199,7 +216,8 @@ def classify(n_clicks, pid, *args):
     return (icon, display, style,
             round(c_cons*100,1), f"{c_cons*100:.1f}%",
             round(c_mast*100,1), f"{c_mast*100:.1f}%",
-            f"Modello: {ver}", _history(), "", str(n_clicks))
+            _model_note(ver, features), _history(), "", str(n_clicks),
+            *[False] * len(FEATURE_NAMES))
 
 
 def _history():
